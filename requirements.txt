@@ -1,0 +1,33 @@
+# Core async HTTP client
+httpx>=0.25.0
+
+# FastAPI web framework and ASGI server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Data validation and serialization
+pydantic>=2.0.0
+
+# Environment variable loading
+python-dotenv>=1.0.0
+
+# YAML configuration parsing
+PyYAML>=6.0.0
+
+# Google AI Development Kit (ADK)
+# Note: This may need to be installed from a specific source or repository
+google-adk>=1.0.0
+
+# For Google GenAI integration
+google-generativeai>=0.3.0
+
+# Logging is built-in, no external dependency needed
+# asyncio, json, time, typing are built-in modules
+
+# Optional: For enhanced development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Optional: For code formatting and linting
+black>=23.0.0
+flake8>=6.0.0
