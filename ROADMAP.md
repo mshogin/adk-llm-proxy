@@ -289,11 +289,11 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 
 ### 6.4 Organize Utility Scripts
 **Create `scripts/` directory and organize utility files:**
-- [ ] Create `scripts/` directory
-- [ ] Move `run_mcp_tests.py` → `scripts/run_mcp_tests.py`
-- [ ] Move `verify_mcp_servers.py` → `scripts/verify_mcp_servers.py`
-- [ ] Move `debug_mcp_connection.py` → `scripts/debug_mcp_connection.py`
-- [ ] Move `debug_mcp_tool_selection.py` → `scripts/debug_mcp_tool_selection.py`
+- [x] Create `scripts/` directory
+- [x] Move `run_mcp_tests.py` → `scripts/run_mcp_tests.py`
+- [x] Move `verify_mcp_servers.py` → `scripts/verify_mcp_servers.py`
+- [x] Move `debug_mcp_connection.py` → `scripts/debug_mcp_connection.py`
+- [x] Move `debug_mcp_tool_selection.py` → `scripts/debug_mcp_tool_selection.py`
 
 **Create `examples/` directory for example scripts:**
 - [ ] Create `examples/` directory
