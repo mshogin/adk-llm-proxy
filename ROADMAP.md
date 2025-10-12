@@ -267,9 +267,9 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Move `test_simple_display.py` → `tests/integration/youtrack/test_simple_display.py`
 
 **Reasoning & Orchestration Tests** → `tests/domain/services/` and `tests/application/services/`:
-- [ ] Move `test_reasoning.py` → `tests/domain/services/test_reasoning_service.py`
-- [ ] Move `test_enhanced_reasoning.py` → `tests/domain/services/test_enhanced_reasoning.py`
-- [ ] Move `test_direct_mcp_reasoning.py` → `tests/domain/services/test_mcp_reasoning.py`
+- [x] Move `test_reasoning.py` → `tests/domain/services/test_reasoning_service.py`
+- [x] Move `test_enhanced_reasoning.py` → `tests/domain/services/test_enhanced_reasoning.py`
+- [x] Move `test_direct_mcp_reasoning.py` → `tests/domain/services/test_mcp_reasoning.py`
 - [ ] Move `test_phase5_orchestration.py` → `tests/application/services/test_orchestration_service.py`
 - [ ] Move `test_context_injection.py` → `tests/application/services/test_context_injection.py`
 
