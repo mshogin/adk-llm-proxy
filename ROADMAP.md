@@ -279,11 +279,11 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 
 ### 6.3 Organize Existing tests/ Files
 **Reorganize 7 files currently in flat tests/ directory:**
-- [ ] Move `test_mcp_client.py` → `tests/infrastructure/mcp/test_client.py`
-- [ ] Move `test_mcp_discovery.py` → `tests/infrastructure/mcp/test_discovery.py`
-- [ ] Move `test_mcp_integration.py` → `tests/infrastructure/mcp/test_integration.py`
-- [ ] Move `test_mcp_registry.py` → `tests/infrastructure/mcp/test_registry.py`
-- [ ] Move `test_mcp_security.py` → `tests/infrastructure/mcp/test_security.py`
+- [x] Move `test_mcp_client.py` → `tests/infrastructure/mcp/test_client.py`
+- [x] Move `test_mcp_discovery.py` → `tests/infrastructure/mcp/test_discovery.py`
+- [x] Move `test_mcp_integration.py` → `tests/infrastructure/mcp/test_integration.py`
+- [x] Move `test_mcp_registry.py` → `tests/infrastructure/mcp/test_registry.py`
+- [x] Move `test_mcp_security.py` → `tests/infrastructure/mcp/test_security.py`
 - [ ] Move `test_client.py` → `tests/infrastructure/llm/test_client.py` (or identify correct location)
 - [ ] Review `test_emacs_behavior.py` - move or delete if obsolete
 
