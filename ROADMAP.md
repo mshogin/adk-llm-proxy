@@ -285,7 +285,7 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Move `test_mcp_registry.py` → `tests/infrastructure/mcp/test_registry.py`
 - [x] Move `test_mcp_security.py` → `tests/infrastructure/mcp/test_security.py`
 - [x] Move `test_client.py` → `tests/integration/test_api_client.py` (integration test)
-- [ ] Review `test_emacs_behavior.py` - move or delete if obsolete
+- [x] Move `test_emacs_behavior.py` → `tests/integration/test_emacs_behavior.py` (HTTP edge cases)
 
 ### 6.4 Organize Utility Scripts
 **Create `scripts/` directory and organize utility files:**
