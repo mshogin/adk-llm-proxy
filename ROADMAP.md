@@ -296,9 +296,9 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Move `debug_mcp_tool_selection.py` → `scripts/debug_mcp_tool_selection.py`
 
 **Create `examples/` directory for example scripts:**
-- [ ] Create `examples/` directory
-- [ ] Move `get_my_tickets.py` → `examples/get_my_tickets.py`
-- [ ] Move `get_my_assigned_tickets.py` → `examples/get_my_assigned_tickets.py`
+- [x] Create `examples/` directory
+- [x] Move `get_my_tickets.py` → `examples/get_my_tickets.py`
+- [x] Move `get_my_assigned_tickets.py` → `examples/get_my_assigned_tickets.py`
 
 ### 6.5 Source Code Organization Review
 **Review and enhance src/ structure:**
