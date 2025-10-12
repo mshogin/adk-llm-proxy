@@ -240,7 +240,7 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Create `tests/domain/services/` directory
 - [x] Create `tests/infrastructure/` subdirectories
 - [x] Create `tests/presentation/api/` directory
-- [ ] Create `tests/integration/` directory for end-to-end tests
+- [x] Create `tests/integration/` directory for end-to-end tests
 
 ### 6.2 Move Test Files from Root to tests/
 **Move and organize 21 test files currently in root directory:**
