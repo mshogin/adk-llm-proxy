@@ -260,11 +260,11 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Move `test_gitlab_my_commits.py` → `tests/integration/gitlab/test_gitlab_my_commits.py`
 
 **YouTrack Integration Tests** → `tests/integration/youtrack/`:
-- [ ] Move `test_youtrack_integration.py` → `tests/integration/youtrack/test_youtrack_integration.py`
-- [ ] Move `test_youtrack_tools.py` → `tests/integration/youtrack/test_youtrack_tools.py`
-- [ ] Move `test_youtrack_correct.py` → `tests/integration/youtrack/test_youtrack_correct.py`
-- [ ] Move `test_ticket_display_fix.py` → `tests/integration/youtrack/test_ticket_display.py`
-- [ ] Move `test_simple_display.py` → `tests/integration/youtrack/test_simple_display.py`
+- [x] Move `test_youtrack_integration.py` → `tests/integration/youtrack/test_youtrack_integration.py`
+- [x] Move `test_youtrack_tools.py` → `tests/integration/youtrack/test_youtrack_tools.py`
+- [x] Move `test_youtrack_correct.py` → `tests/integration/youtrack/test_youtrack_correct.py`
+- [x] Move `test_ticket_display_fix.py` → `tests/integration/youtrack/test_ticket_display.py`
+- [x] Move `test_simple_display.py` → `tests/integration/youtrack/test_simple_display.py`
 
 **Reasoning & Orchestration Tests** → `tests/domain/services/` and `tests/application/services/`:
 - [ ] Move `test_reasoning.py` → `tests/domain/services/test_reasoning_service.py`
