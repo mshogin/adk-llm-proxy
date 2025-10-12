@@ -247,11 +247,11 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 
 **MCP Infrastructure Tests** → `tests/infrastructure/mcp/`:
 - [x] Move `test_mcp_server.py` → `tests/infrastructure/mcp/test_mcp_server.py`
-- [ ] Move `test_real_mcp.py` → `tests/infrastructure/mcp/test_real_mcp.py`
-- [ ] Move `test_fixed_mcp.py` → `tests/infrastructure/mcp/test_fixed_mcp.py`
-- [ ] Move `test_direct_mcp.py` → `tests/infrastructure/mcp/test_direct_mcp.py`
-- [ ] Move `test_simple_mcp.py` → `tests/infrastructure/mcp/test_simple_mcp.py`
-- [ ] Move `test_comprehensive_mcp.py` → `tests/infrastructure/mcp/test_comprehensive_mcp.py`
+- [x] Move `test_real_mcp.py` → `tests/infrastructure/mcp/test_real_mcp.py`
+- [x] Move `test_fixed_mcp.py` → `tests/infrastructure/mcp/test_fixed_mcp.py`
+- [x] Move `test_direct_mcp.py` → `tests/infrastructure/mcp/test_direct_mcp.py`
+- [x] Move `test_simple_mcp.py` → `tests/infrastructure/mcp/test_simple_mcp.py`
+- [x] Move `test_comprehensive_mcp.py` → `tests/infrastructure/mcp/test_comprehensive_mcp.py`
 
 **GitLab Integration Tests** → `tests/integration/gitlab/`:
 - [ ] Move `test_gitlab_tools.py` → `tests/integration/gitlab/test_gitlab_tools.py`
