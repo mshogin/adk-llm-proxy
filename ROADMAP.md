@@ -302,8 +302,9 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 
 ### 6.5 Source Code Organization Review
 **Review and enhance src/ structure:**
-- [ ] Create `src/domain/models/` directory for domain entities
-- [ ] Create `src/infrastructure/llm/` directory
+- [x] Create `src/domain/models/` directory for domain entities
+- [x] Create `src/infrastructure/llm/` directory
+- [x] Create `src/infrastructure/adk/` directory
 - [ ] Move/create `src/infrastructure/llm/openai_client.py`
 - [ ] Move/create `src/infrastructure/llm/ollama_client.py`
 - [ ] Move/create `src/infrastructure/llm/deepseek_client.py`
