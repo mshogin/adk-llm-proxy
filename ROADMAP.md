@@ -274,8 +274,8 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Move `test_context_injection.py` → `tests/application/services/test_context_injection.py`
 
 **Other Tests**:
-- [ ] Move `test_provider.py` → `tests/infrastructure/llm/test_provider.py`
-- [ ] Move `test_no_warnings.py` → `tests/integration/test_no_warnings.py`
+- [x] Move `test_provider.py` → `tests/infrastructure/llm/test_provider.py`
+- [x] Move `test_no_warnings.py` → `tests/integration/test_no_warnings.py`
 
 ### 6.3 Organize Existing tests/ Files
 **Reorganize 7 files currently in flat tests/ directory:**
