@@ -246,7 +246,7 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 **Move and organize 21 test files currently in root directory:**
 
 **MCP Infrastructure Tests** → `tests/infrastructure/mcp/`:
-- [ ] Move `test_mcp_server.py` → `tests/infrastructure/mcp/test_mcp_server.py`
+- [x] Move `test_mcp_server.py` → `tests/infrastructure/mcp/test_mcp_server.py`
 - [ ] Move `test_real_mcp.py` → `tests/infrastructure/mcp/test_real_mcp.py`
 - [ ] Move `test_fixed_mcp.py` → `tests/infrastructure/mcp/test_fixed_mcp.py`
 - [ ] Move `test_direct_mcp.py` → `tests/infrastructure/mcp/test_direct_mcp.py`
