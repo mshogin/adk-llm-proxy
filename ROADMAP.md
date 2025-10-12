@@ -369,7 +369,7 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Add MCP server development guide
 - [x] Create example MCP server implementations
 - [x] Add troubleshooting guides
-- [ ] Create video tutorials and demos
+- [x] Create video tutorials and demos
 
 ---
 
