@@ -237,7 +237,7 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 ### 6.1 Test Directory Reorganization
 - [x] Create `tests/` directory structure mirroring `src/`
 - [x] Create `tests/application/services/` directory
-- [ ] Create `tests/domain/services/` directory
+- [x] Create `tests/domain/services/` directory
 - [ ] Create `tests/infrastructure/` subdirectories
 - [ ] Create `tests/presentation/api/` directory
 - [ ] Create `tests/integration/` directory for end-to-end tests
