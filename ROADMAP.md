@@ -254,10 +254,10 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Move `test_comprehensive_mcp.py` → `tests/infrastructure/mcp/test_comprehensive_mcp.py`
 
 **GitLab Integration Tests** → `tests/integration/gitlab/`:
-- [ ] Move `test_gitlab_tools.py` → `tests/integration/gitlab/test_gitlab_tools.py`
-- [ ] Move `test_gitlab_real.py` → `tests/integration/gitlab/test_gitlab_real.py`
-- [ ] Move `test_gitlab_direct.py` → `tests/integration/gitlab/test_gitlab_direct.py`
-- [ ] Move `test_gitlab_my_commits.py` → `tests/integration/gitlab/test_gitlab_my_commits.py`
+- [x] Move `test_gitlab_tools.py` → `tests/integration/gitlab/test_gitlab_tools.py`
+- [x] Move `test_gitlab_real.py` → `tests/integration/gitlab/test_gitlab_real.py`
+- [x] Move `test_gitlab_direct.py` → `tests/integration/gitlab/test_gitlab_direct.py`
+- [x] Move `test_gitlab_my_commits.py` → `tests/integration/gitlab/test_gitlab_my_commits.py`
 
 **YouTrack Integration Tests** → `tests/integration/youtrack/`:
 - [ ] Move `test_youtrack_integration.py` → `tests/integration/youtrack/test_youtrack_integration.py`
