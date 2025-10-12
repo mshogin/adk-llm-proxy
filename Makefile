@@ -57,19 +57,19 @@ restart-mcp: ## Restart MCP servers (called by run target)
 
 check-mcp: ## Check MCP server connectivity and tools
 	@echo "$(BLUE)🔍 Checking MCP server connectivity...$(RESET)"
-	@$(PYTHON) debug_mcp_connection.py
+	@$(PYTHON) scripts/debug_mcp_connection.py
 
 test-mcp: ## Test MCP tool functionality
 	@echo "$(BLUE)🧪 Testing MCP tool functionality...$(RESET)"
-	@$(PYTHON) test_direct_mcp_reasoning.py
+	@$(PYTHON) tests/domain/services/test_mcp_reasoning.py
 
 test-tickets: ## Test ticket retrieval specifically
 	@echo "$(BLUE)🎫 Testing ticket retrieval...$(RESET)"
-	@$(PYTHON) get_my_assigned_tickets.py
+	@$(PYTHON) examples/get_my_assigned_tickets.py
 
 test-enhanced-reasoning: ## Test enhanced reasoning with ticket display
 	@echo "$(BLUE)🧠 Testing enhanced reasoning pipeline...$(RESET)"
-	@$(PYTHON) test_ticket_display_fix.py
+	@$(PYTHON) tests/integration/youtrack/test_ticket_display.py
 
 clean: stop-mcp ## Clean up all processes and temporary files
 	@echo "$(RED)🧹 Cleaning up...$(RESET)"

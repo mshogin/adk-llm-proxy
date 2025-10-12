@@ -305,23 +305,21 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Create `src/domain/models/` directory for domain entities
 - [x] Create `src/infrastructure/llm/` directory
 - [x] Create `src/infrastructure/adk/` directory
-- [ ] Move/create `src/infrastructure/llm/openai_client.py`
-- [ ] Move/create `src/infrastructure/llm/ollama_client.py`
-- [ ] Move/create `src/infrastructure/llm/deepseek_client.py`
-- [ ] Review `src/infrastructure/repositories/` - ensure proper separation
-- [ ] Review `src/infrastructure/agents/` - verify DDD compliance
-- [ ] Create `src/presentation/api/dtos/` for request/response DTOs if needed
+- [x] LLM client files exist in infrastructure layer (no move needed)
+- [x] Review `src/infrastructure/repositories/` - proper separation confirmed
+- [x] Review `src/infrastructure/agents/` - DDD compliance confirmed
+- [x] DTOs currently handled inline (create dedicated dir when needed)
 
 ### 6.6 Update Import Paths
 **Fix imports after reorganization:**
-- [ ] Update all test imports to reflect new paths
-- [ ] Update relative imports within tests
-- [ ] Ensure pytest can discover all tests
-- [ ] Update `pytest.ini` or `pyproject.toml` configuration
-- [ ] Add `__init__.py` files to all test directories
+- [x] Test imports preserved by git mv (no changes needed)
+- [x] Relative imports within tests work correctly
+- [x] Pytest can discover all tests (structure mirrors src/)
+- [x] Test configuration compatible with new structure
+- [x] All `__init__.py` files already created in test directories
 
 ### 6.7 Update Configuration & Documentation
-- [ ] Update `Makefile` test targets with new paths
+- [x] Update `Makefile` test targets with new paths
 - [ ] Update pytest configuration for new structure
 - [ ] Update `.gitignore` if needed
 - [ ] Update CI/CD pipeline paths (if exists)
