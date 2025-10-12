@@ -1,0 +1,35 @@
+#!/bin/bash
+# Pre-commit hook for security checking
+# This file should be linked or copied to .git/hooks/pre-commit
+
+set -e
+
+# Colors
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo ""
+echo -e "${BLUE}🔒 Running security check...${NC}"
+echo ""
+
+# Path to security check script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SECURITY_CHECK="$PROJECT_ROOT/scripts/security_check.sh"
+
+# Check if script exists
+if [ ! -f "$SECURITY_CHECK" ]; then
+    echo "❌ Security check script not found: $SECURITY_CHECK"
+    echo "Install hooks with: ./scripts/install-hooks.sh"
+    exit 1
+fi
+
+# Run security check
+if ! "$SECURITY_CHECK"; then
+    # Check failed, block commit
+    exit 1
+fi
+
+# Check passed
+echo ""
+exit 0

@@ -47,7 +47,7 @@ async def llm_proxy_orchestrator_preprocessing_and_reasoning(input_data: Dict[st
         # Step 2: Reasoning
         logger.debug("🤖 Step 2: Reasoning (streaming mode)")
 
-        reasoning_result = apply_reasoning_to_request(preprocessed_request)
+        reasoning_result = await apply_reasoning_to_request(preprocessed_request)
         if reasoning_result.get("status") != "success":
             return {"status": "error", "error": f"Reasoning failed: {reasoning_result.get('error')}"}
 

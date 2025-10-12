@@ -1,0 +1,58 @@
+{
+  "name": "youtrack-mcp-server",
+  "version": "1.0.0",
+  "description": "YouTrack MCP server for epic/task tracking and analysis",
+  "main": "server.py",
+  "author": "ADK LLM Proxy",
+  "license": "MIT",
+  "mcp": {
+    "version": "0.1.0",
+    "capabilities": {
+      "tools": [
+        "find_epic",
+        "get_epic_details",
+        "list_epic_tasks",
+        "get_task_details",
+        "get_task_comments",
+        "get_task_history",
+        "analyze_task_activity",
+        "get_epic_status_summary",
+        "analyze_epic_progress",
+        "generate_epic_report"
+      ],
+      "resources": [
+        "youtrack://epic/{epic_id}",
+        "youtrack://task/{task_id}",
+        "youtrack://report/{report_type}"
+      ],
+      "prompts": [
+        "epic_analysis_prompt",
+        "task_summary_prompt",
+        "progress_report_prompt"
+      ]
+    }
+  },
+  "runtime": {
+    "python": ">=3.8",
+    "dependencies": [
+      "mcp>=0.1.0",
+      "requests>=2.28.0",
+      "python-dateutil>=2.8.2",
+      "pydantic>=2.0.0"
+    ]
+  },
+  "configuration": {
+    "env": {
+      "YOUTRACK_URL": "https://your-company.youtrack.cloud",
+      "YOUTRACK_TOKEN": "your-token-here"
+    },
+    "args": []
+  },
+  "lifecycle": {
+    "startup_timeout": 30,
+    "shutdown_timeout": 10,
+    "health_check_interval": 60,
+    "restart_on_failure": true,
+    "max_restarts": 3
+  }
+}

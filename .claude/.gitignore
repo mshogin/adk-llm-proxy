@@ -1,0 +1,12 @@
+# Ignore local user preferences
+local/
+*.local.json
+
+# Ignore output styles (user-specific)
+output-styles/
+
+# Keep the main configuration files
+!CLAUDE.md
+!settings.json
+!README.md
+!commands/

@@ -1,0 +1,99 @@
+# ADK LLM Proxy Configuration with MCP Integration
+# Copy this file to config.yaml and replace placeholders with real values
+
+# LLM Provider configurations
+providers:
+  openai:
+    api_key: "your-openai-api-key-here"  # Get from https://platform.openai.com/api-keys
+    endpoint: "https://api.openai.com/v1"
+    default_model: "gpt-4o-mini"
+
+  ollama:
+    endpoint: "http://localhost:11434"  # Local Ollama server
+    default_model: "mistral"
+
+  deepseek:
+    api_key: "your-deepseek-api-key-here"  # Get from https://platform.deepseek.com
+    endpoint: "https://api.deepseek.com/v1"
+    default_model: "deepseek-chat"
+
+# MCP (Model Context Protocol) Configuration
+mcp:
+  # Global MCP settings
+  enabled: true
+  health_check_interval: 60.0
+  connection_timeout: 30.0
+  max_retry_attempts: 3
+
+  # MCP Server definitions
+  servers:
+    # Real MCP Filesystem Server
+    - name: "filesystem-server"
+      transport: "stdio"
+      enabled: true
+      command: "mcp-server-filesystem"
+      args: ["/path/to/your/project"]  # Replace with your project path
+      timeout: 30.0
+      retry_attempts: 3
+      retry_delay: 1.0
+      health_check_interval: 60.0
+
+    # Test MCP server for development
+    - name: "test-server"
+      transport: "stdio"
+      enabled: false  # Disabled by default
+      command: "python"
+      args: ["test_mcp_server.py"]
+      timeout: 30.0
+      retry_attempts: 3
+      retry_delay: 1.0
+      health_check_interval: 90.0
+
+    # YouTrack MCP Server for task/epic tracking
+    - name: "youtrack-server"
+      transport: "stdio"
+      enabled: true
+      command: "python"
+      args: ["-m", "mcps.youtrack.server"]
+      env:
+        YOUTRACK_BASE_URL: "https://youtrack.example.com"  # Your YouTrack instance URL
+        YOUTRACK_TOKEN: "your-youtrack-token-here"  # Get from YouTrack: Profile → Authentication → Permanent Token
+#        YOUTRACK_PROJECT_ID: "your-project-id"  # Optional: specific project
+      timeout: 30.0
+      retry_attempts: 3
+      retry_delay: 2.0
+      health_check_interval: 120.0
+
+    # GitLab MCP Server for repository analysis
+    - name: "gitlab-server"
+      transport: "stdio"
+      enabled: true
+      command: "python"
+      args: ["-m", "mcps.gitlab.server"]
+      env:
+        GITLAB_URL: "https://gitlab.com"  # Or your GitLab instance URL
+        GITLAB_TOKEN: "your-gitlab-token-here"  # Get from GitLab: User Settings → Access Tokens
+#        GITLAB_PROJECT_ID: "12345"  # Optional: specific project ID
+#        GITLAB_GROUP_ID: "67890"   # Optional: specific group ID
+      timeout: 35.0
+      retry_attempts: 3
+      retry_delay: 2.0
+      health_check_interval: 90.0
+
+# Server settings
+server:
+  host: "0.0.0.0"  # Listen on all interfaces
+  port: 8000  # Server port
+  debug: false  # Set to true for development
+
+# Processing settings
+processing:
+  enable_context_injection: true
+  system_prompt_prefix: "You are a helpful AI assistant."
+  max_context_length: 4000
+  enable_response_analytics: true
+  reasoning_workflow: "workflows/enhanced"  # Path to reasoning workflow (default, empty, enhanced)
+
+# Logging settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL

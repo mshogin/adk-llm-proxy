@@ -1,0 +1,66 @@
+{
+  "name": "gitlab-mcp-server",
+  "version": "1.0.0",
+  "description": "GitLab MCP server for code analysis and repository correlation",
+  "main": "server.py",
+  "author": "ADK LLM Proxy",
+  "license": "MIT",
+  "mcp": {
+    "version": "0.1.0",
+    "capabilities": {
+      "tools": [
+        "find_project",
+        "get_recent_commits",
+        "analyze_commit_messages",
+        "get_merge_requests",
+        "analyze_branch_activity",
+        "link_commits_to_tasks",
+        "analyze_epic_code_changes",
+        "get_code_metrics",
+        "track_developer_activity",
+        "analyze_code_reviews",
+        "analyze_code_complexity",
+        "detect_code_patterns",
+        "track_technical_debt",
+        "analyze_code_quality_trends",
+        "assess_refactoring_impact"
+      ],
+      "resources": [
+        "gitlab://project/{project_id}",
+        "gitlab://commit/{commit_sha}",
+        "gitlab://merge_request/{mr_id}",
+        "gitlab://metrics/{project_id}"
+      ],
+      "prompts": [
+        "code_review_prompt",
+        "commit_analysis_prompt",
+        "technical_debt_prompt"
+      ]
+    }
+  },
+  "runtime": {
+    "python": ">=3.8",
+    "dependencies": [
+      "mcp>=0.1.0",
+      "requests>=2.28.0",
+      "python-dateutil>=2.8.2",
+      "pydantic>=2.0.0",
+      "python-gitlab>=4.0.0"
+    ]
+  },
+  "configuration": {
+    "env": {
+      "GITLAB_URL": "https://gitlab.com",
+      "GITLAB_TOKEN": "your-token-here",
+      "GITLAB_PROJECT_ID": "your-project-id"
+    },
+    "args": []
+  },
+  "lifecycle": {
+    "startup_timeout": 30,
+    "shutdown_timeout": 10,
+    "health_check_interval": 60,
+    "restart_on_failure": true,
+    "max_restarts": 3
+  }
+}

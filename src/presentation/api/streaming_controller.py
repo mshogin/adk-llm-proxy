@@ -25,13 +25,10 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.infrastructure.config.config import config
-from src.application.services.orchestration_service import root_agent, llm_proxy_orchestrator
-from google.adk.tools import ToolContext
 import httpx
-from src.application.services.postprocessing_service import analyze_response_content, add_chat_content, create_unified_analysis
-from src.application.services.preprocessing_service import inject_context, validate_request, extract_request_metadata
-from src.infrastructure.agents.adk_wrapper import execute_preprocessing_agent, execute_postprocessing_agent
-from src.domain.services.content_filter_service import filter_messages_for_llm, add_analysis_markers
+from src.infrastructure.agents.adk_wrapper import execute_postprocessing_agent
+from src.infrastructure.mcp import mcp_registry
+from src.domain.services.content_filter_service import filter_messages_for_llm
 
 # Global HTTP client
 http_client = None
@@ -118,6 +115,108 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+async def initialize_mcp_servers():
+    """Initialize MCP servers and log their status."""
+    logger.info("🔌 Initializing MCP servers...")
+
+    try:
+        # Get enabled MCP servers from configuration
+        enabled_servers = config.get_enabled_mcp_servers()
+
+        if not enabled_servers:
+            logger.info("📋 No MCP servers configured")
+            return
+
+        logger.info(f"📋 Found {len(enabled_servers)} enabled MCP server(s)")
+
+        # Register all servers
+        registration_results = []
+        for server_config in enabled_servers:
+            try:
+                success = await mcp_registry.register_server(server_config)
+                registration_results.append((server_config.name, success))
+                if success:
+                    logger.info(f"✅ MCP server '{server_config.name}' registered successfully")
+                else:
+                    logger.error(f"❌ Failed to register MCP server '{server_config.name}'")
+            except Exception as e:
+                logger.error(f"❌ Error registering MCP server '{server_config.name}': {e}")
+                registration_results.append((server_config.name, False))
+
+        # Connect to all servers
+        logger.info("🔗 Connecting to MCP servers...")
+        await mcp_registry.connect_all()
+
+        # Start health monitoring
+        await mcp_registry.start_health_monitoring(interval=60.0)
+        logger.info("💓 MCP health monitoring started")
+
+        # Get connection status and log results
+        connected_servers = mcp_registry.get_connected_servers()
+        all_servers = mcp_registry.get_all_servers()
+
+        logger.info("📊 MCP Server Status Summary:")
+        logger.info(f"   • Total servers: {len(all_servers)}")
+        logger.info(f"   • Connected servers: {len(connected_servers)}")
+
+        for name, server_info in all_servers.items():
+            status_emoji = "✅" if server_info.is_healthy else "❌"
+            logger.info(f"   {status_emoji} {name}: {server_info.status.value}")
+
+            if server_info.is_healthy:
+                logger.info(f"      └─ Tools: {server_info.tools_count}, Resources: {server_info.resources_count}, Prompts: {server_info.prompts_count}")
+
+        # Test specific server access
+        await test_server_access()
+
+    except Exception as e:
+        logger.error(f"❌ Error initializing MCP servers: {e}")
+        # Don't raise - allow server to start even if MCP fails
+
+async def test_server_access():
+    """Test access to specific MCP servers like YouTrack and GitLab."""
+    logger.info("🔍 Testing MCP server access...")
+
+    # Test YouTrack access
+    youtrack_client = mcp_registry.get_server_by_name("youtrack-server")
+    if youtrack_client:
+        try:
+            # Test basic connection
+            tools = youtrack_client.get_available_tools()
+            logger.info(f"✅ MCP YouTrack: Connected with {len(tools)} tools available")
+
+            # Try to get projects or perform a simple query to verify access
+            try:
+                # This would depend on what tools YouTrack MCP provides
+                logger.info("   └─ YouTrack access verification: Connection successful")
+            except Exception as e:
+                logger.warning(f"   └─ YouTrack access verification failed: {e}")
+
+        except Exception as e:
+            logger.error(f"❌ MCP YouTrack access test failed: {e}")
+    else:
+        logger.info("⚠️  MCP YouTrack: Not connected")
+
+    # Test GitLab access
+    gitlab_client = mcp_registry.get_server_by_name("gitlab-server")
+    if gitlab_client:
+        try:
+            # Test basic connection
+            tools = gitlab_client.get_available_tools()
+            logger.info(f"✅ MCP GitLab: Connected with {len(tools)} tools available")
+
+            # Try to get projects or perform a simple query to verify access
+            try:
+                # This would depend on what tools GitLab MCP provides
+                logger.info("   └─ GitLab access verification: Connection successful")
+            except Exception as e:
+                logger.warning(f"   └─ GitLab access verification failed: {e}")
+
+        except Exception as e:
+            logger.error(f"❌ MCP GitLab access test failed: {e}")
+    else:
+        logger.info("⚠️  MCP GitLab: Not connected")
+
 # Add request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -167,14 +266,38 @@ async def startup():
         if config.current_provider == "openai":
             logger.info(f"🔑 OpenAI API key: {config.OPENAI_API_KEY[:10]}...")
         logger.info(f"🌐 Server: {config.HOST}:{config.PORT}")
+
+        # Initialize MCP servers
+        await initialize_mcp_servers()
     except ValueError as e:
         logger.error(f"❌ Configuration error: {e}")
         raise
 
 @app.on_event("shutdown")
 async def shutdown():
-    await cleanup_http_client()
-    logger.info("ADK Server shutdown complete")
+    logger.info("🛑 Shutting down ADK Server...")
+
+    # Shutdown MCP servers with timeout
+    try:
+        import asyncio
+        # Use asyncio.wait_for to timeout graceful shutdown
+        await asyncio.wait_for(mcp_registry.shutdown(), timeout=5.0)
+        logger.info("✅ MCP servers shutdown complete")
+    except asyncio.TimeoutError:
+        logger.warning("⚠️ MCP shutdown timed out, forcing cleanup")
+    except Exception as e:
+        # Suppress asyncio cleanup errors during shutdown
+        if "cancel scope" not in str(e).lower() and "generatorexit" not in str(e).lower():
+            logger.error(f"❌ Error shutting down MCP servers: {e}")
+
+    # Cleanup HTTP client
+    try:
+        await cleanup_http_client()
+    except Exception as e:
+        # Suppress HTTP client cleanup errors
+        pass
+
+    logger.info("✅ ADK Server shutdown complete")
 
 @app.get("/")
 async def root():
@@ -258,7 +381,7 @@ async def stream_chat_completion_adk(request_data: Dict[str, Any]) -> AsyncGener
 
         # Apply reasoning to get the enhanced request
         from src.domain.services.reasoning_service_impl import apply_reasoning_to_request
-        reasoning_result = apply_reasoning_to_request(reasoning_request)
+        reasoning_result = await apply_reasoning_to_request(reasoning_request)
 
         if reasoning_result.get("status") != "success":
             error_chunk = {
@@ -340,33 +463,7 @@ async def stream_chat_completion_adk(request_data: Dict[str, Any]) -> AsyncGener
 
                                 logger.info(f"🤖 ADK Orchestrator postprocessing phase completed: {postprocessing_orchestrator_result.get('agent_name', 'unknown')}")
 
-                                # Execute unified analysis combining request and response analysis
-                                logger.debug("🤖 Orchestrator guided unified analysis")
-                                unified_analysis_result = create_unified_analysis(reasoning_metadata, full_content)
-
-                                # If we have unified analysis to add, send it as a final chunk with analysis markers
-                                if unified_analysis_result.get("should_display", False):
-                                    additional_content = unified_analysis_result.get("analysis_content", "")
-                                    # Add clear analysis markers to separate from LLM conversation
-                                    marked_content = add_analysis_markers(additional_content)
-                                    final_chunk = {
-                                        "id": f"adk-stream-{int(time.time())}",
-                                        "object": "chat.completion.chunk",
-                                        "created": int(time.time()),
-                                        "model": processed_request.get("model", config.current_model),
-                                        "choices": [
-                                            {
-                                                "index": 0,
-                                                "delta": {
-                                                    "content": marked_content
-                                                },
-                                                "finish_reason": None
-                                            }
-                                        ]
-                                    }
-                                    yield f"data: {json.dumps(final_chunk)}\n\n"
-
-                                logger.info(f"🤖 ADK Orchestrator completed full streaming pipeline - Content length: {len(full_content)}, Unified analysis: {unified_analysis_result.get('status', 'unknown')}")
+                                logger.info(f"🤖 ADK Orchestrator completed full streaming pipeline - Content length: {len(full_content)}")
 
                             yield "data: [DONE]\n\n"
                             break

@@ -1,0 +1,33 @@
+{
+  "name": "template-mcp-server",
+  "version": "1.0.0",
+  "description": "Template MCP server for development",
+  "main": "server.py",
+  "author": "ADK LLM Proxy",
+  "license": "MIT",
+  "mcp": {
+    "version": "0.1.0",
+    "capabilities": {
+      "tools": [],
+      "resources": [],
+      "prompts": []
+    }
+  },
+  "runtime": {
+    "python": ">=3.8",
+    "dependencies": [
+      "mcp>=0.1.0"
+    ]
+  },
+  "configuration": {
+    "env": {},
+    "args": []
+  },
+  "lifecycle": {
+    "startup_timeout": 30,
+    "shutdown_timeout": 10,
+    "health_check_interval": 60,
+    "restart_on_failure": true,
+    "max_restarts": 3
+  }
+}

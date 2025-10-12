@@ -1,0 +1,191 @@
+# Security Check Configuration for ADK LLM Proxy
+# Конфигурация для проверки безопасности коммитов
+
+# Включить/выключить проверку (основная проверка паттернов)
+pattern_check_enabled: true
+
+# Категории проверок
+checks:
+  # Проверка секретов и токенов
+  secrets:
+    enabled: true
+    patterns:
+      - name: "API Keys"
+        description: "API ключи различных сервисов"
+        examples:
+          - "AWS: AKIA[0-9A-Z]{16}"
+          - "OpenAI: sk-[a-zA-Z0-9]{48,}"
+          - "GitHub: ghp_[a-zA-Z0-9]{36}"
+          - "GitLab: glpat-[a-zA-Z0-9]{20}"
+          - "Slack: xoxb-[0-9]{11,13}-[0-9]{11,13}-[a-zA-Z0-9]{24}"
+
+      - name: "OAuth Tokens"
+        description: "OAuth и Bearer токены"
+
+      - name: "JWT Tokens"
+        description: "JSON Web Tokens"
+
+      - name: "Passwords"
+        description: "Пароли в plaintext"
+        patterns:
+          - "password\\s*=\\s*['\"][^'\"]{8,}"
+          - "passwd\\s*=\\s*['\"][^'\"]{8,}"
+          - "pwd\\s*=\\s*['\"][^'\"]{8,}"
+
+  # Проверка криптографических ключей
+  crypto_keys:
+    enabled: true
+    patterns:
+      - "-----BEGIN PRIVATE KEY-----"
+      - "-----BEGIN RSA PRIVATE KEY-----"
+      - "-----BEGIN OPENSSH PRIVATE KEY-----"
+      - "-----BEGIN PGP PRIVATE KEY-----"
+
+  # Проверка credentials
+  credentials:
+    enabled: true
+    patterns:
+      - name: "Database Connection Strings"
+        description: "Строки подключения к БД с паролями"
+        examples:
+          - "postgres://user:password@host"
+          - "mysql://user:password@host"
+          - "mongodb://user:password@host"
+
+      - name: "Environment Variables"
+        description: "Переменные окружения с реальными значениями"
+        notes: ".env файлы должны быть в .gitignore"
+
+  # Проверка персональных данных
+  personal_data:
+    enabled: true
+    patterns:
+      - name: "Email Addresses"
+        description: "Email адреса (кроме примеров)"
+        exclude_patterns:
+          - ".*@example\\.com"
+          - ".*@test\\.com"
+          - ".*@localhost"
+          - "noreply@.*"
+          - ".*@anthropic\\.com"  # Claude's email
+
+      - name: "Phone Numbers"
+        description: "Телефонные номера"
+        patterns:
+          - "\\+\\d{1,3}[\\s-]?\\(?\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}"
+
+  # Проверка корпоративных данных
+  corporate_data:
+    enabled: true
+    patterns:
+      - name: "Internal IPs"
+        description: "Внутренние IP адреса"
+        examples:
+          - "10.x.x.x"
+          - "172.16-31.x.x"
+          - "192.168.x.x"
+
+      - name: "Internal URLs"
+        description: "Internal company URLs"
+        notes: "Wildberries URLs should be checked"
+
+# Файлы и паттерны для игнорирования
+exclude:
+  # Файлы которые всегда пропускаем
+  files:
+    - "*.example"
+    - "*.template"
+    - "*.sample"
+    - "*.test.js"
+    - "*.test.py"
+    - "*.test.ts"
+    - "*_test.go"
+    - "test_*.py"
+    - "*.md"  # Документация обычно содержит примеры
+    - ".security-check.yaml"  # Сам конфиг
+
+  # Директории которые пропускаем
+  directories:
+    - "node_modules/"
+    - "vendor/"
+    - ".git/"
+    - "dist/"
+    - "build/"
+    - "__pycache__/"
+    - ".venv/"
+    - "venv/"
+
+  # Специфичные паттерны для игнорирования
+  patterns:
+    # Тестовые данные
+    - pattern: "sk-test-"
+      reason: "Тестовые ключи OpenAI"
+
+    - pattern: "AKIA00000000EXAMPLE"
+      reason: "Примеры AWS ключей"
+
+    # Документация
+    - pattern: "example\\.com"
+      reason: "Примеры доменов"
+
+    # Placeholder значения
+    - pattern: "your-api-key-here"
+      reason: "Placeholder для API ключей"
+
+    - pattern: "your-.*-here"
+      reason: "Placeholder значения"
+
+    - pattern: "REPLACE_WITH_"
+      reason: "Placeholder значения"
+
+    # Claude Code examples
+    - pattern: "noreply@anthropic\\.com"
+      reason: "Claude Code commit co-author"
+
+# Настройки отчетности
+reporting:
+  # Формат вывода: simple, detailed, json
+  format: detailed
+
+  # Показывать контекст вокруг найденных проблем
+  show_context: true
+  context_lines: 3
+
+  # Цветной вывод в терминале
+  colorized: true
+
+# Действия при обнаружении проблем
+actions:
+  # Блокировать коммит при обнаружении проблем
+  block_commit: true
+
+  # Уровень severity при котором блокируем
+  # critical, high, medium, low
+  block_severity: "high"
+
+  # Логировать проверки
+  log_checks: true
+  log_file: "logs/security/security-check.log"
+
+# Deep security check with Claude Code
+deep_check:
+  # Enable deep analysis with Claude Code in pre-commit hook
+  # When enabled, pre-commit will pause and show instructions for running /seccheck
+  enabled: false  # Set to true to require /seccheck before every commit
+
+# Whitelist - известные безопасные значения
+whitelist:
+  # Тестовые ключи которые можно коммитить
+  - value: "sk-test-1234567890abcdef"
+    reason: "Тестовый ключ для unit тестов"
+
+  - value: "test@example.com"
+    reason: "Тестовый email"
+
+  # Claude Code co-author
+  - value: "noreply@anthropic.com"
+    reason: "Claude Code commit co-author email"
+
+  # Можно добавлять свои значения
+  # - value: "your-safe-value"
+  #   reason: "причина почему это безопасно"

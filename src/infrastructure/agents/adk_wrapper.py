@@ -53,6 +53,13 @@ class ADKAgentWrapper:
                                 elif 'inject' in tool.__name__:
                                     messages = input_data["request_data"].get("messages", [])
                                     result = tool(messages)
+                                elif 'discover_preprocessing_tools' in tool.__name__:
+                                    result = await tool(input_data["request_data"])
+                                elif 'execute_preprocessing_pipeline' in tool.__name__:
+                                    result = await tool(input_data["request_data"])
+                                elif 'enrich_context_with_mcp_tools' in tool.__name__:
+                                    messages = input_data["request_data"].get("messages", [])
+                                    result = await tool(messages, [], input_data["request_data"])  # async function
                                 else:
                                     result = tool(input_data["request_data"])
                             else:
@@ -66,18 +73,38 @@ class ADKAgentWrapper:
                             content = input_data["content"]
                             if hasattr(tool, '__name__'):
                                 if 'analyze' in tool.__name__:
-                                    result = tool(content)
+                                    result = tool(content)  # sync function
                                 elif 'filter' in tool.__name__:
-                                    result = tool(content)
+                                    result = tool(content)  # sync function
                                 elif 'add_chat' in tool.__name__:
-                                    result = tool(content, "analysis")
+                                    result = tool(content, "analysis")  # sync function
                                 elif 'log_interaction' in tool.__name__:
-                                    result = tool(
+                                    result = tool(  # sync function
                                         input_data.get("metadata", {}),
                                         {"model": input_data.get("model", "unknown")},
                                         {"quality_score": 85}
                                     )
+                                elif 'execute_postprocessing_tools' in tool.__name__:
+                                    result = await tool(content, [], input_data.get("metadata"))  # async function
+                                elif 'validate_response_with_mcp_tools' in tool.__name__:
+                                    result = await tool(content, [], input_data.get("metadata"))  # async function
+                                elif 'enhance_response_with_mcp_tools' in tool.__name__:
+                                    result = await tool(content, [], input_data.get("metadata"))  # async function
+                                elif 'execute_postprocessing_pipeline' in tool.__name__:
+                                    # Get pipeline config or create default
+                                    pipeline_config = input_data.get("pipeline_config", {
+                                        "validation_enabled": True,
+                                        "enhancement_enabled": True,
+                                        "validation_tools": [],
+                                        "enhancement_tools": []
+                                    })
+                                    result = await tool(content, pipeline_config, input_data.get("metadata"))  # async function
+                                elif 'create_postprocessing_pipeline' in tool.__name__:
+                                    result = await tool(content, input_data.get("metadata"))  # async function
+                                elif 'discover_postprocessing_tools' in tool.__name__:
+                                    result = await tool(content, input_data.get("metadata"))  # async function
                                 else:
+                                    # Default to sync for unknown functions
                                     result = tool(content)
                             else:
                                 result = tool(content)

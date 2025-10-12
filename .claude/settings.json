@@ -1,0 +1,52 @@
+{
+  "settingSources": [
+    ".claude/CLAUDE.md"
+  ],
+  "systemPrompt": {
+    "append": "You are working on an LLM Proxy Server with intelligent agent processing. Always follow the project's DDD architecture principles and coding standards. Use type hints, async/await, and proper error handling. When making changes, consider the full request pipeline: preprocessing → reasoning → LLM → postprocessing."
+  },
+  "tools": {
+    "bash": {
+      "enabled": true
+    },
+    "read": {
+      "enabled": true
+    },
+    "write": {
+      "enabled": true
+    },
+    "edit": {
+      "enabled": true
+    },
+    "glob": {
+      "enabled": true
+    },
+    "grep": {
+      "enabled": true
+    }
+  },
+  "permissions": {
+    "autoApprove": [
+      {
+        "tool": "bash",
+        "pattern": "pytest.*"
+      },
+      {
+        "tool": "bash",
+        "pattern": "python test_.*"
+      },
+      {
+        "tool": "bash",
+        "pattern": "python main.py.*"
+      },
+      {
+        "tool": "bash",
+        "pattern": "black .*"
+      },
+      {
+        "tool": "bash",
+        "pattern": "flake8 .*"
+      }
+    ]
+  }
+}
