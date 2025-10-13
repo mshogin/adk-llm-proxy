@@ -550,14 +550,14 @@ src/golang/
 ```
 
 ### 9.2 Domain Layer: Interfaces & Models
-- [ ] Define `ILLMProvider` interface in `internal/domain/services/provider.go`
-- [ ] Define `IWorkflow` interface in `internal/domain/services/workflow.go`
-- [ ] Define `IReasoningService` interface in `internal/domain/services/reasoning.go`
-- [ ] Create `CompletionRequest` model in `internal/domain/models/request.go`
-- [ ] Create `CompletionChunk` model (OpenAI-compatible) in `internal/domain/models/response.go`
-- [ ] Create `ReasoningResult` model in `internal/domain/models/reasoning_result.go`
-- [ ] Add unit tests for model serialization
-- [ ] Validate OpenAI schema compatibility
+- [x] Define `ILLMProvider` interface in `internal/domain/services/provider.go`
+- [x] Define `IWorkflow` interface in `internal/domain/services/workflow.go`
+- [x] Define `IReasoningService` interface in `internal/domain/services/reasoning.go`
+- [x] Create `CompletionRequest` model in `internal/domain/models/request.go`
+- [x] Create `CompletionChunk` model (OpenAI-compatible) in `internal/domain/models/response.go`
+- [x] Create `ReasoningResult` model in `internal/domain/models/reasoning_result.go`
+- [x] Add unit tests for model serialization
+- [x] Validate OpenAI schema compatibility
 
 **Implementation notes:**
 - Use **interfaces** for all abstractions (Dependency Inversion Principle)
