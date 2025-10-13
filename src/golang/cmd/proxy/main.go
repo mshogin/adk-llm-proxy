@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/mshogin/agents/internal/application/services"
+	domainServices "github.com/mshogin/agents/internal/domain/services"
 	"github.com/mshogin/agents/internal/infrastructure/config"
 	"github.com/mshogin/agents/internal/infrastructure/providers"
 	"github.com/mshogin/agents/internal/presentation/api"
@@ -51,13 +52,13 @@ func main() {
 	}
 
 	// Initialize LLM providers
-	providerRegistry := make(map[string]services.LLMProvider)
+	providerRegistry := make(map[string]domainServices.LLMProvider)
 	for name, providerCfg := range cfg.Providers {
 		if !providerCfg.Enabled {
 			continue
 		}
 
-		var provider services.LLMProvider
+		var provider domainServices.LLMProvider
 		switch name {
 		case "openai":
 			provider = providers.NewOpenAIProvider(providerCfg)
@@ -77,9 +78,9 @@ func main() {
 	}
 
 	// Initialize workflows
-	workflowRegistry := make(map[string]services.Workflow)
+	workflowRegistry := make(map[string]domainServices.Workflow)
 	for _, wfName := range cfg.Workflows.Enabled {
-		var wf services.Workflow
+		var wf domainServices.Workflow
 		switch wfName {
 		case "default":
 			wf = workflows.NewDefaultWorkflow()
