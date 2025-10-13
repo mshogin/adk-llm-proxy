@@ -649,6 +649,487 @@ func TestOrchestrator(t *testing.T) {
 - **ISP** → Small, focused interfaces in domain layer
 - **DIP** → Dependencies point inward toward domain
 
+## Interface-Driven Design
+
+Interface-driven design is a development approach where you **define interfaces first**, then implement them. This approach ensures loose coupling, testability, and adherence to SOLID principles (especially DIP and OCP).
+
+### Core Principle: Design Abstraction Before Implementation
+
+**The Golden Rule**: When adding a new feature or component, always define the interface **before** writing any implementation code.
+
+**Why This Matters:**
+1. **Forces you to think about contracts** - What operations are needed? What are the inputs/outputs?
+2. **Enables parallel development** - Multiple people can implement different parts simultaneously
+3. **Makes testing trivial** - Mock implementations are easy to create
+4. **Prevents tight coupling** - Consumers depend on abstractions, not concrete types
+5. **Supports multiple implementations** - Easy to swap or add providers/strategies
+
+### When to Define Interfaces
+
+**During the Planning Phase** (before writing any implementation):
+
+1. **Identify external dependencies** - Databases, APIs, file systems, external services
+2. **Define domain abstractions** - Core business operations that need multiple implementations
+3. **Plan layer boundaries** - How will layers communicate? What contracts do they need?
+4. **Consider testability** - What needs to be mocked during testing?
+
+**Example Planning Session:**
+```
+Feature: Add caching to LLM responses
+
+Step 1: Define interface (abstraction first)
+  - What operations? Get, Set, Delete, Clear
+  - What data types? Key (string), Value (LLMResponse), TTL (duration)
+  - Where does it live? Domain layer (abstraction)
+
+Step 2: Plan implementations
+  - RedisCache (infrastructure layer)
+  - MemoryCache (infrastructure layer)
+  - NoOpCache (for testing)
+
+Step 3: Wire it up
+  - Orchestrator depends on CacheInterface (domain)
+  - Main.go injects concrete implementation (Redis or Memory)
+```
+
+### Python Interface Patterns
+
+Python provides multiple ways to define interfaces. Choose the right tool for the job.
+
+#### 1. Abstract Base Classes (ABC)
+**Use when**: You have a base class with shared implementation and require specific methods to be overridden.
+
+```python
+from abc import ABC, abstractmethod
+from typing import List
+
+class LLMProvider(ABC):
+    """Base interface for all LLM providers"""
+    
+    @abstractmethod
+    async def stream_completion(self, request: CompletionRequest) -> AsyncIterator[CompletionChunk]:
+        """Stream completion chunks from the LLM"""
+        pass
+    
+    @abstractmethod
+    def name(self) -> str:
+        """Return provider name"""
+        pass
+
+# Concrete implementation
+class OpenAIProvider(LLMProvider):
+    async def stream_completion(self, request: CompletionRequest) -> AsyncIterator[CompletionChunk]:
+        # Implementation
+        async for chunk in self._call_openai_api(request):
+            yield chunk
+    
+    def name(self) -> str:
+        return "openai"
+
+# Enforces contract at instantiation
+provider = OpenAIProvider()  # ✓ OK
+```
+
+**Key Features:**
+- Cannot instantiate abstract classes
+- Raises `TypeError` if abstract methods are not implemented
+- Supports inheritance hierarchy
+- Can provide shared implementation in base class
+
+#### 2. Protocol (Structural Subtyping - PEP 544)
+**Use when**: You want duck typing with type checker support, or defining interfaces for external code you don't control.
+
+```python
+from typing import Protocol, AsyncIterator
+
+class CacheInterface(Protocol):
+    """Structural interface for caching"""
+    
+    async def get(self, key: str) -> dict | None:
+        ...
+    
+    async def set(self, key: str, value: dict, ttl: int) -> None:
+        ...
+    
+    async def delete(self, key: str) -> None:
+        ...
+
+# No explicit inheritance needed
+class RedisCache:
+    async def get(self, key: str) -> dict | None:
+        # Implementation
+        pass
+    
+    async def set(self, key: str, value: dict, ttl: int) -> None:
+        # Implementation
+        pass
+    
+    async def delete(self, key: str) -> None:
+        # Implementation
+        pass
+
+# Type checker verifies structure matches
+def use_cache(cache: CacheInterface) -> None:
+    await cache.get("key")  # ✓ Type safe
+
+cache = RedisCache()
+use_cache(cache)  # ✓ OK - RedisCache matches CacheInterface structure
+```
+
+**Key Features:**
+- No explicit inheritance required (duck typing)
+- Type checkers (mypy, pyright) verify compatibility
+- Great for defining interfaces for third-party code
+- More flexible than ABC
+
+#### 3. Type Hints Only (Lightweight)
+**Use when**: You need simple type checking without runtime enforcement.
+
+```python
+from typing import Callable, Awaitable
+
+# Function type alias
+ToolExecutor = Callable[[str, dict], Awaitable[dict]]
+
+# Usage
+async def execute_mcp_tool(tool_name: str, args: dict) -> dict:
+    # Implementation
+    pass
+
+# Function matches type
+executor: ToolExecutor = execute_mcp_tool
+```
+
+**Comparison:**
+
+| Pattern | Runtime Check | Inheritance Required | Type Check | Use Case |
+|---------|--------------|---------------------|------------|----------|
+| **ABC** | ✓ Yes | ✓ Yes | ✓ Yes | Domain interfaces with shared logic |
+| **Protocol** | ✗ No | ✗ No | ✓ Yes | Duck-typed interfaces, external code |
+| **Type Hints** | ✗ No | ✗ No | ✓ Yes | Simple function types, callbacks |
+
+### Golang Interface Patterns
+
+Go's interface system is based on **implicit satisfaction** - if a type implements all methods, it automatically satisfies the interface.
+
+#### 1. Small, Focused Interfaces (Idiomatic Go)
+
+```go
+// Good: Small, focused interface
+type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+    Close() error
+}
+
+// Compose interfaces when needed
+type ReadWriteCloser interface {
+    Reader
+    Writer
+    Closer
+}
+```
+
+**Go Proverb**: *"The bigger the interface, the weaker the abstraction."*
+
+#### 2. Interface Composition
+
+```go
+// Domain layer defines focused interfaces
+// File: internal/domain/services/provider.go
+package services
+
+type Streamer interface {
+    StreamCompletion(ctx context.Context, req *CompletionRequest) (<-chan CompletionChunk, error)
+}
+
+type Namer interface {
+    Name() string
+}
+
+type HealthChecker interface {
+    CheckHealth(ctx context.Context) error
+}
+
+// Compose when needed
+type LLMProvider interface {
+    Streamer
+    Namer
+    HealthChecker
+}
+
+// Clients can depend on minimal interface
+type Orchestrator struct {
+    streamer Streamer  // Only needs streaming capability
+}
+
+// Implementation satisfies all interfaces implicitly
+type OpenAIProvider struct {
+    apiKey string
+}
+
+func (p *OpenAIProvider) StreamCompletion(ctx context.Context, req *CompletionRequest) (<-chan CompletionChunk, error) {
+    // Implementation
+}
+
+func (p *OpenAIProvider) Name() string {
+    return "openai"
+}
+
+func (p *OpenAIProvider) CheckHealth(ctx context.Context) error {
+    // Implementation
+}
+
+// Automatically satisfies LLMProvider, Streamer, Namer, HealthChecker
+```
+
+#### 3. Interface Segregation Pattern
+
+```go
+// Anti-pattern: Fat interface
+type MCPServer interface {
+    ExecuteTool(ctx context.Context, name string, args map[string]any) (any, error)
+    ListTools(ctx context.Context) ([]Tool, error)
+    GetResources(ctx context.Context) ([]Resource, error)
+    GetPrompts(ctx context.Context) ([]Prompt, error)
+    CheckHealth(ctx context.Context) error
+    GetConfig() Config
+    UpdateConfig(Config) error
+    // ... 10 more methods
+}
+
+// Better: Segregated interfaces
+type ToolExecutor interface {
+    ExecuteTool(ctx context.Context, name string, args map[string]any) (any, error)
+}
+
+type ToolLister interface {
+    ListTools(ctx context.Context) ([]Tool, error)
+}
+
+type ResourceProvider interface {
+    GetResources(ctx context.Context) ([]Resource, error)
+}
+
+// Clients depend only on what they need
+type Orchestrator struct {
+    executor ToolExecutor  // Minimal dependency
+}
+
+type Registry struct {
+    lister ToolLister  // Different minimal dependency
+}
+```
+
+### Dependency Injection Patterns
+
+Dependency injection enables testability and loose coupling. Always inject dependencies through constructors.
+
+#### Python Dependency Injection
+
+```python
+# Good: Constructor injection
+class OrchestrationService:
+    def __init__(
+        self,
+        reasoning: IReasoningService,
+        llm_provider: LLMProvider,
+        cache: CacheInterface
+    ):
+        self.reasoning = reasoning
+        self.llm_provider = llm_provider
+        self.cache = cache
+    
+    async def process(self, request: Request) -> Response:
+        # Use injected dependencies
+        result = await self.reasoning.reason(context)
+        return Response(result)
+
+# Composition root (main.py)
+def setup():
+    # Wire dependencies
+    reasoning = ReasoningServiceImpl()
+    llm_provider = OpenAIProvider(api_key="...")
+    cache = RedisCache(url="redis://localhost")
+    
+    # Inject dependencies
+    orchestrator = OrchestrationService(reasoning, llm_provider, cache)
+    return orchestrator
+
+# Testing with mocks
+def test_orchestration():
+    mock_reasoning = MockReasoningService()
+    mock_llm = MockLLMProvider()
+    mock_cache = MockCache()
+    
+    orchestrator = OrchestrationService(mock_reasoning, mock_llm, mock_cache)
+    # Test with mocks instead of real dependencies
+```
+
+#### Golang Dependency Injection
+
+```go
+// Good: Constructor injection
+type Orchestrator struct {
+    reasoning services.ReasoningService
+    provider  services.LLMProvider
+    cache     services.Cache
+}
+
+func NewOrchestrator(
+    reasoning services.ReasoningService,
+    provider services.LLMProvider,
+    cache services.Cache,
+) *Orchestrator {
+    return &Orchestrator{
+        reasoning: reasoning,
+        provider:  provider,
+        cache:     cache,
+    }
+}
+
+func (o *Orchestrator) Process(ctx context.Context, req *Request) (*Response, error) {
+    // Use injected dependencies
+    result, err := o.reasoning.Reason(ctx, req)
+    return &Response{Data: result}, err
+}
+
+// Composition root (main.go)
+func main() {
+    // Wire dependencies
+    reasoning := domain.NewReasoningService()
+    provider := providers.NewOpenAIProvider(config.APIKey)
+    cache := infrastructure.NewRedisCache(config.RedisURL)
+    
+    // Inject dependencies
+    orchestrator := services.NewOrchestrator(reasoning, provider, cache)
+    handler := api.NewHandler(orchestrator)
+    
+    // Start server
+    http.ListenAndServe(":8080", handler)
+}
+
+// Testing with mocks
+func TestOrchestrator(t *testing.T) {
+    mockReasoning := &MockReasoningService{}
+    mockProvider := &MockLLMProvider{}
+    mockCache := &MockCache{}
+    
+    orchestrator := NewOrchestrator(mockReasoning, mockProvider, mockCache)
+    // Test with mocks
+}
+```
+
+### Mock-Friendly Design
+
+Good interface design makes testing easy. Follow these patterns:
+
+#### Python Mock Example
+
+```python
+# Interface-based design
+class IReasoningService(ABC):
+    @abstractmethod
+    async def reason(self, context: ReasoningContext) -> ReasoningResult:
+        pass
+
+# Mock implementation for testing
+class MockReasoningService(IReasoningService):
+    def __init__(self, return_value: ReasoningResult):
+        self.return_value = return_value
+        self.calls = []
+    
+    async def reason(self, context: ReasoningContext) -> ReasoningResult:
+        self.calls.append(context)
+        return self.return_value
+
+# Test using mock
+async def test_orchestration():
+    expected_result = ReasoningResult(message="test")
+    mock = MockReasoningService(expected_result)
+    
+    orchestrator = OrchestrationService(reasoning=mock)
+    result = await orchestrator.process(request)
+    
+    assert result.message == "test"
+    assert len(mock.calls) == 1  # Verify reasoning was called
+```
+
+#### Golang Mock Example
+
+```go
+// Interface enables mocking
+type ReasoningService interface {
+    Reason(ctx context.Context, req *ReasoningContext) (*ReasoningResult, error)
+}
+
+// Mock implementation
+type MockReasoningService struct {
+    ReturnValue *ReasoningResult
+    ReturnError error
+    Calls       []*ReasoningContext
+}
+
+func (m *MockReasoningService) Reason(ctx context.Context, req *ReasoningContext) (*ReasoningResult, error) {
+    m.Calls = append(m.Calls, req)
+    return m.ReturnValue, m.ReturnError
+}
+
+// Test using mock
+func TestOrchestrator(t *testing.T) {
+    mock := &MockReasoningService{
+        ReturnValue: &ReasoningResult{Message: "test"},
+        ReturnError: nil,
+    }
+    
+    orchestrator := NewOrchestrator(mock, nil, nil)
+    result, err := orchestrator.Process(context.Background(), &Request{})
+    
+    assert.NoError(t, err)
+    assert.Equal(t, "test", result.Message)
+    assert.Len(t, mock.Calls, 1)  // Verify reasoning was called
+}
+```
+
+### Interface Design Checklist
+
+When designing a new interface, ask yourself:
+
+- [ ] **Is it small and focused?** (ISP - Interface Segregation Principle)
+- [ ] **Does it define a single capability?** (SRP - Single Responsibility Principle)
+- [ ] **Is it defined in the domain layer?** (DIP - Dependency Inversion Principle)
+- [ ] **Can it have multiple implementations?** (OCP - Open/Closed Principle)
+- [ ] **Is it easy to mock for testing?** (Testability)
+- [ ] **Does it avoid exposing implementation details?** (Abstraction)
+- [ ] **Are all methods related to the same concept?** (Cohesion)
+- [ ] **Would a client ever need only some of these methods?** (If yes, split it)
+
+### Summary: Interface-First Development Workflow
+
+**Step-by-step process for adding new functionality:**
+
+1. **Define the interface** in `internal/domain/services/` (Go) or `src/domain/services/` (Python)
+2. **Document the contract** - What are the inputs, outputs, and error conditions?
+3. **Create mock implementation** for testing
+4. **Write tests** using the mock
+5. **Implement in infrastructure** layer (e.g., `internal/infrastructure/providers/`)
+6. **Wire dependencies** in composition root (`main.go` or `main.py`)
+7. **Run tests** - Both unit tests (with mocks) and integration tests (with real implementation)
+
+**Benefits:**
+- ✓ Testable from day one
+- ✓ Loosely coupled architecture
+- ✓ Easy to swap implementations
+- ✓ Parallel development possible
+- ✓ Forced to think about contracts before code
+- ✓ SOLID principles automatically enforced
+
 ### DDD Principles & File Organization
 
 **CRITICAL: Follow strict layer separation and file placement rules**
