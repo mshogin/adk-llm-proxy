@@ -425,15 +425,15 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - Show constructor injection pattern for testability
 
 ### 8.3 Add Clean Architecture Section
-- [ ] Create "Clean Architecture Principles (Uncle Bob)" section in CLAUDE.md
-- [ ] Explain the Dependency Rule (dependencies point inward)
-- [ ] Map Clean Architecture circles to project layers
-- [ ] Document Entities → src/domain/models/ mapping
-- [ ] Document Use Cases → src/application/services/ mapping
-- [ ] Document Interface Adapters → src/infrastructure/, src/presentation/ mapping
-- [ ] Show dependency flow diagrams (ASCII art or description)
-- [ ] Explain why domain layer has no external dependencies
-- [ ] Document dependency inversion usage (interfaces in domain)
+- [x] Create "Clean Architecture Principles (Uncle Bob)" section in CLAUDE.md
+- [x] Explain the Dependency Rule (dependencies point inward)
+- [x] Map Clean Architecture circles to project layers
+- [x] Document Entities → src/domain/models/ mapping
+- [x] Document Use Cases → src/application/services/ mapping
+- [x] Document Interface Adapters → src/infrastructure/, src/presentation/ mapping
+- [x] Show dependency flow diagrams (ASCII art or description)
+- [x] Explain why domain layer has no external dependencies
+- [x] Document dependency inversion usage (interfaces in domain)
 
 **Implementation notes:**
 - Reference Robert C. Martin's Clean Architecture book

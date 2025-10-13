@@ -1130,6 +1130,486 @@ When designing a new interface, ask yourself:
 - ✓ Forced to think about contracts before code
 - ✓ SOLID principles automatically enforced
 
+## Clean Architecture Principles (Uncle Bob)
+
+Clean Architecture, introduced by Robert C. Martin ("Uncle Bob"), provides a blueprint for organizing code to achieve independence from frameworks, UI, databases, and external systems. The core idea: **dependencies flow inward** toward the business logic.
+
+### The Dependency Rule
+
+**The Golden Rule of Clean Architecture:**
+
+> **Dependencies can only point inward.** Inner layers cannot know anything about outer layers.
+
+```
+┌─────────────────────────────────────────────┐
+│  External Interfaces (Frameworks, DBs, UI)  │  ← Outermost
+├─────────────────────────────────────────────┤
+│  Interface Adapters (Controllers, Gateways) │
+├─────────────────────────────────────────────┤
+│  Application Business Rules (Use Cases)     │
+├─────────────────────────────────────────────┤
+│  Enterprise Business Rules (Entities)       │  ← Innermost
+└─────────────────────────────────────────────┘
+
+       Dependencies flow ↓ inward only
+```
+
+**What this means:**
+- **Entities** (innermost) know nothing about Use Cases, Controllers, or Databases
+- **Use Cases** know about Entities, but not about Controllers or Databases
+- **Interface Adapters** know about Use Cases and Entities, but not about specific Frameworks
+- **Frameworks** (outermost) know about everything, but nothing depends on them
+
+**Why this matters:**
+- Business logic is **independent** of frameworks, databases, and UI
+- Business logic is **testable** without external dependencies
+- You can **swap** frameworks, databases, or UI without touching business logic
+- Changes in external systems don't ripple into core business logic
+
+### Clean Architecture Circles Mapped to DDD Layers
+
+Our project structure follows Clean Architecture principles through DDD layers:
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│  Frameworks & Drivers (External Systems)                      │
+│  - FastAPI framework                                          │
+│  - HTTP clients (httpx)                                       │
+│  - MCP SDK                                                    │
+│  - Database drivers                                           │
+│  - External APIs (OpenAI, GitLab, YouTrack)                   │
+└───────────────────────────────────────────────────────────────┘
+                          ↑ depends on ↑
+┌───────────────────────────────────────────────────────────────┐
+│  Interface Adapters (src/infrastructure/ + src/presentation/) │
+│  - src/presentation/api/                                      │
+│    - streaming_controller.py (HTTP handlers)                  │
+│    - Request/Response DTOs                                    │
+│  - src/infrastructure/                                        │
+│    - llm/openai_client.py (implements domain interfaces)      │
+│    - mcp/client.py (MCP protocol implementation)              │
+│    - config/config.py (external config loading)               │
+└───────────────────────────────────────────────────────────────┘
+                          ↑ depends on ↑
+┌───────────────────────────────────────────────────────────────┐
+│  Application Business Rules (src/application/)                │
+│  - src/application/services/                                  │
+│    - orchestration_service.py (coordinates use cases)         │
+│    - preprocessing_service.py (use case logic)                │
+│    - postprocessing_service.py (use case logic)               │
+│    - mcp_tool_selector.py (tool selection use case)           │
+└───────────────────────────────────────────────────────────────┘
+                          ↑ depends on ↑
+┌───────────────────────────────────────────────────────────────┐
+│  Enterprise Business Rules (src/domain/)                      │
+│  - src/domain/models/ (entities, value objects)               │
+│  - src/domain/services/ (business logic, interfaces)          │
+│    - reasoning_service_impl.py (core reasoning logic)         │
+│    - Interfaces: IReasoningService, ILLMProvider, etc.        │
+└───────────────────────────────────────────────────────────────┘
+                    ↑ innermost - no dependencies ↑
+```
+
+### Layer-by-Layer Breakdown
+
+#### 1. Entities (Domain Models)
+**Location**: `src/domain/models/` or `internal/domain/models/`
+
+**Responsibility**: Core business objects and rules that are fundamental to the business, independent of any application.
+
+**Examples in this project:**
+```python
+# src/domain/models/reasoning_context.py
+@dataclass
+class ReasoningContext:
+    """Core entity representing reasoning state"""
+    messages: List[Message]
+    intent: Optional[str]
+    selected_tools: List[str]
+    metadata: dict
+
+# src/domain/models/completion_request.py
+@dataclass
+class CompletionRequest:
+    """Core entity for LLM requests"""
+    model: str
+    messages: List[Message]
+    temperature: float
+    stream: bool
+```
+
+**Go example:**
+```go
+// internal/domain/models/request.go
+package models
+
+type CompletionRequest struct {
+    Model       string    `json:"model"`
+    Messages    []Message `json:"messages"`
+    Temperature float64   `json:"temperature"`
+    Stream      bool      `json:"stream"`
+}
+```
+
+**Key characteristics:**
+- No dependencies on any other layer
+- Pure data structures with business rules
+- No framework code, no database code, no UI code
+- Can be used in any context
+
+#### 2. Use Cases (Application Services)
+**Location**: `src/application/services/` or `internal/application/services/`
+
+**Responsibility**: Application-specific business rules. Orchestrates flow of data to/from entities and directs entities to use their business rules.
+
+**Examples in this project:**
+```python
+# src/application/services/orchestration_service.py
+class OrchestrationService:
+    """Use case: Process user request through full pipeline"""
+    
+    def __init__(
+        self,
+        reasoning: IReasoningService,      # Domain interface
+        preprocessing: PreprocessingService,
+        postprocessing: PostprocessingService
+    ):
+        self.reasoning = reasoning
+        self.preprocessing = preprocessing
+        self.postprocessing = postprocessing
+    
+    async def process_request(self, request: CompletionRequest) -> CompletionResponse:
+        # Orchestrate use case
+        preprocessed = await self.preprocessing.process(request)
+        reasoning_result = await self.reasoning.reason(preprocessed)
+        final_result = await self.postprocessing.process(reasoning_result)
+        return final_result
+```
+
+**Go example:**
+```go
+// internal/application/services/orchestrator.go
+package services
+
+type Orchestrator struct {
+    reasoning domain.ReasoningService  // Domain interface
+    provider  domain.LLMProvider       // Domain interface
+}
+
+func (o *Orchestrator) ProcessRequest(ctx context.Context, req *domain.CompletionRequest) (*domain.Response, error) {
+    // Orchestrate use case
+    reasoningResult, err := o.reasoning.Reason(ctx, req)
+    if err != nil {
+        return nil, err
+    }
+    
+    return o.provider.Complete(ctx, reasoningResult)
+}
+```
+
+**Key characteristics:**
+- Depends on domain layer (entities + interfaces)
+- Coordinates business logic, doesn't implement it
+- No knowledge of HTTP, databases, or frameworks
+- Uses interfaces for external dependencies (Dependency Inversion)
+
+#### 3. Interface Adapters (Infrastructure + Presentation)
+**Location**: 
+- `src/infrastructure/` or `internal/infrastructure/` (adapters TO external systems)
+- `src/presentation/` or `internal/presentation/` (adapters FROM external systems)
+
+**Responsibility**: Convert data between the format most convenient for use cases/entities and the format most convenient for external systems (web, database, APIs).
+
+**Examples in this project:**
+
+**Infrastructure (Outbound Adapters):**
+```python
+# src/infrastructure/llm/openai_client.py
+class OpenAIClient:
+    """Adapter TO OpenAI API - implements domain interface"""
+    
+    async def stream_completion(self, request: CompletionRequest) -> AsyncIterator[CompletionChunk]:
+        # Adapt domain model to OpenAI API format
+        openai_request = {
+            "model": request.model,
+            "messages": [self._to_openai_message(m) for m in request.messages],
+            "stream": True
+        }
+        
+        # Call external API
+        async for chunk in self.client.chat.completions.create(**openai_request):
+            # Adapt OpenAI format back to domain model
+            yield self._to_domain_chunk(chunk)
+```
+
+**Presentation (Inbound Adapters):**
+```python
+# src/presentation/api/streaming_controller.py
+@app.post("/v1/chat/completions")
+async def chat_completions(request: Request):
+    """Adapter FROM HTTP - converts HTTP request to domain model"""
+    
+    # Parse HTTP request body
+    body = await request.json()
+    
+    # Convert to domain model
+    completion_request = CompletionRequest(
+        model=body["model"],
+        messages=[Message(**m) for m in body["messages"]],
+        stream=body.get("stream", False)
+    )
+    
+    # Call use case
+    result = await orchestrator.process_request(completion_request)
+    
+    # Convert domain model to HTTP response
+    return JSONResponse(content=result.to_dict())
+```
+
+**Go example:**
+```go
+// internal/infrastructure/providers/openai.go
+package providers
+
+type OpenAIProvider struct {
+    client *http.Client
+}
+
+// Implements domain.LLMProvider interface
+func (p *OpenAIProvider) StreamCompletion(ctx context.Context, req *domain.CompletionRequest) (<-chan domain.CompletionChunk, error) {
+    // Adapt domain model to OpenAI API format
+    openaiReq := p.toOpenAIRequest(req)
+    
+    // Call external API
+    resp, err := p.client.Post(openaiURL, "application/json", openaiReq)
+    
+    // Adapt response back to domain model
+    return p.parseSSEStream(resp.Body), nil
+}
+```
+
+**Key characteristics:**
+- Implements domain interfaces (Dependency Inversion)
+- Handles format conversion (domain ↔ external)
+- Contains framework-specific code
+- Can be replaced without changing use cases or entities
+
+#### 4. Frameworks & Drivers (External Layer)
+**Location**: Not in your codebase - external dependencies
+
+**Examples:**
+- FastAPI framework
+- OpenAI SDK
+- GitLab Python library
+- Redis client
+- PostgreSQL driver
+
+**Key characteristics:**
+- External libraries and frameworks
+- Your code depends on them, but they don't depend on your code
+- Changes here (e.g., switching FastAPI to Flask) only affect adapter layer
+
+### Dependency Flow: Why Domain Defines Interfaces
+
+**The Key to Clean Architecture: Dependency Inversion**
+
+```
+❌ Bad (Traditional Layered Architecture):
+
+Use Case → OpenAI Client (concrete)
+                ↓
+         OpenAI SDK (external)
+
+Problem: Use case depends on concrete implementation.
+Can't test without real OpenAI API. Can't swap providers easily.
+
+✓ Good (Clean Architecture with DIP):
+
+Use Case → ILLMProvider (interface)
+                ↑ implements
+         OpenAI Client (concrete)
+                ↓
+         OpenAI SDK (external)
+
+Solution: Use case depends on abstraction.
+Easy to test with mocks. Easy to swap providers.
+```
+
+**In code:**
+
+```python
+# Domain layer defines interface
+# src/domain/services/llm_provider.py
+from abc import ABC, abstractmethod
+
+class ILLMProvider(ABC):
+    """Domain abstraction - no implementation details"""
+    
+    @abstractmethod
+    async def stream_completion(self, request: CompletionRequest) -> AsyncIterator[CompletionChunk]:
+        pass
+
+# Application layer depends on domain interface
+# src/application/services/orchestration_service.py
+class OrchestrationService:
+    def __init__(self, llm_provider: ILLMProvider):  # Depends on abstraction
+        self.llm_provider = llm_provider
+
+# Infrastructure layer implements domain interface
+# src/infrastructure/llm/openai_client.py
+class OpenAIClient(ILLMProvider):  # Implements domain abstraction
+    async def stream_completion(self, request: CompletionRequest):
+        # Implementation using OpenAI SDK
+        pass
+```
+
+**Why this works:**
+1. **Domain layer** defines what it needs (interface)
+2. **Infrastructure layer** provides what domain needs (implementation)
+3. **Dependency points inward** (infrastructure → domain), not outward
+4. **Use cases remain testable** (can inject mock implementation)
+
+### Why Domain Layer Has No External Dependencies
+
+**Principle**: The domain layer should have **zero dependencies** on external systems.
+
+**Golang example (domain layer):**
+```go
+// internal/domain/services/reasoning.go
+package services
+
+// Only imports from standard library or other domain packages
+import (
+    "context"
+    "internal/domain/models"
+)
+
+// Interface defines what domain needs
+type ReasoningService interface {
+    Reason(ctx context.Context, input *models.ReasoningInput) (*models.ReasoningResult, error)
+}
+
+// NO imports like:
+// import "github.com/openai/openai-go"  ❌
+// import "gorm.io/gorm"  ❌
+// import "github.com/gin-gonic/gin"  ❌
+```
+
+**Benefits:**
+1. **Testable** - No need to mock external systems for domain tests
+2. **Portable** - Business logic can be reused in any context
+3. **Independent** - Changes in frameworks don't affect business logic
+4. **Fast builds** - Fewer dependencies = faster compilation
+5. **Clear separation** - Forces you to think about abstractions
+
+### Dependency Inversion in Action
+
+**Example: Adding caching to LLM responses**
+
+**Step 1: Domain defines interface**
+```go
+// internal/domain/services/cache.go
+package services
+
+type Cache interface {
+    Get(ctx context.Context, key string) ([]byte, error)
+    Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+}
+```
+
+**Step 2: Use case depends on interface**
+```go
+// internal/application/services/orchestrator.go
+type Orchestrator struct {
+    cache services.Cache  // Depends on domain interface
+}
+
+func (o *Orchestrator) ProcessRequest(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+    // Check cache
+    cached, err := o.cache.Get(ctx, req.CacheKey())
+    if err == nil {
+        return parseCached(cached), nil
+    }
+    
+    // Process and cache
+    result := o.process(ctx, req)
+    o.cache.Set(ctx, req.CacheKey(), result, 1*time.Hour)
+    return result, nil
+}
+```
+
+**Step 3: Infrastructure implements interface**
+```go
+// internal/infrastructure/cache/redis.go
+package cache
+
+import "github.com/redis/go-redis/v9"
+
+type RedisCache struct {
+    client *redis.Client
+}
+
+// Implements services.Cache interface
+func (c *RedisCache) Get(ctx context.Context, key string) ([]byte, error) {
+    return c.client.Get(ctx, key).Bytes()
+}
+
+func (c *RedisCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+    return c.client.Set(ctx, key, value, ttl).Err()
+}
+```
+
+**Step 4: Wire in main.go**
+```go
+// cmd/proxy/main.go
+func main() {
+    // Create concrete implementation
+    redisCache := cache.NewRedisCache(config.RedisURL)
+    
+    // Inject into use case (dependency inversion)
+    orchestrator := services.NewOrchestrator(redisCache)
+    
+    // Use case doesn't know it's Redis - only knows Cache interface
+}
+```
+
+**Result:**
+- ✓ Use case testable with mock cache
+- ✓ Can swap Redis for Memcached without changing use case
+- ✓ Domain layer remains independent
+- ✓ Dependencies point inward (infrastructure → domain)
+
+### Clean Architecture Checklist
+
+When building a new feature, verify:
+
+- [ ] **Entities** - Are domain models free of framework code?
+- [ ] **Interfaces in domain** - Does domain define interfaces for external dependencies?
+- [ ] **Use cases independent** - Can use cases be tested without external systems?
+- [ ] **Dependency direction** - Do all dependencies point inward?
+- [ ] **No framework in business logic** - Is business logic framework-agnostic?
+- [ ] **Adapter layer** - Are all external systems accessed through adapters?
+- [ ] **Testability** - Can you test business logic with mocks?
+- [ ] **Replaceability** - Can you swap frameworks/databases without touching business logic?
+
+### Summary: Clean Architecture Benefits
+
+**What you gain:**
+- ✓ **Independent of Frameworks** - Business logic doesn't depend on FastAPI, Flask, or any framework
+- ✓ **Testable** - Business logic can be tested without UI, database, or external systems
+- ✓ **Independent of UI** - Can change from REST to GraphQL without touching business logic
+- ✓ **Independent of Database** - Can swap PostgreSQL for MongoDB without changing use cases
+- ✓ **Independent of External Systems** - Business logic doesn't know about OpenAI, GitLab, or YouTrack
+
+**How to achieve it:**
+1. **Define interfaces in domain** layer
+2. **Implement interfaces in infrastructure** layer
+3. **Inject dependencies** at composition root (main.go/main.py)
+4. **Follow Dependency Rule** - dependencies always point inward
+5. **Keep domain pure** - no external dependencies in domain layer
+
+**Clean Architecture + DDD + SOLID = Rock-Solid Codebase**
+
 ### DDD Principles & File Organization
 
 **CRITICAL: Follow strict layer separation and file placement rules**
