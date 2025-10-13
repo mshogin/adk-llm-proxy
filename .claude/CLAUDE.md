@@ -855,18 +855,36 @@ Optional:
 ## Code Review Checklist
 
 When reviewing or writing code:
+
+### Architecture & Design
 - [ ] **Golang-first approach** (Python only for MCP servers, ADK, or when truly necessary)
 - [ ] **Proper layer separation** (domain/application/infrastructure/presentation)
 - [ ] **Files in correct directories** (follow DDD structure, Go project layout)
 - [ ] **Test files properly located** (`tests/golang/` mirroring `src/golang/`)
-- [ ] **Interfaces defined** (Dependency Inversion, small focused interfaces)
-- [ ] **Error handling** (return errors with context, don't panic)
-- [ ] **Comments on public APIs** (godoc-style)
+- [ ] **Interfaces defined before implementations** (design abstraction first)
+- [ ] **Dependency Rule respected** (dependencies point inward toward domain)
+- [ ] **Abstractions at proper layer** (interfaces in domain, implementations in infrastructure)
+
+### SOLID Principles
+- [ ] **Single Responsibility (SRP)** - Each class/module has one reason to change
+- [ ] **Open/Closed (OCP)** - Can add new behavior without modifying existing code (via interfaces)
+- [ ] **Liskov Substitution (LSP)** - All implementations honor their interface contracts
+- [ ] **Interface Segregation (ISP)** - Interfaces are small and focused, not fat interfaces
+- [ ] **Dependency Inversion (DIP)** - Depend on abstractions, not concrete implementations
+
+### Code Quality
+- [ ] **Functions are small and focused** (<30 lines, single responsibility per function)
+- [ ] **Function names are self-explanatory** (clear intent, no need for excessive comments)
 - [ ] **No business logic in infrastructure** (domain services only)
-- [ ] **No external dependencies in domain** (interfaces only)
-- [ ] **Concurrency safe** (proper goroutine management, channel usage)
-- [ ] **Config changes documented**
+- [ ] **No external dependencies in domain** (interfaces only, no imports from infrastructure)
+- [ ] **Error handling** (return errors with context, don't panic in Go)
+- [ ] **Comments on public APIs** (godoc-style in Go, docstrings in Python)
+
+### Testing & Safety
+- [ ] **Testable design** (dependency injection, mockable interfaces)
 - [ ] **Tests included** (unit + integration where appropriate)
+- [ ] **Concurrency safe** (proper goroutine management, channel usage in Go)
+- [ ] **Config changes documented**
 
 ## Git Workflow
 

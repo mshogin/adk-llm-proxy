@@ -392,14 +392,14 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 
 ### 8.1 Add SOLID Principles Section
 - [x] Create "SOLID Principles in Practice" section in CLAUDE.md
-- [ ] Document Single Responsibility Principle (SRP) with examples
-- [ ] Document Open/Closed Principle (OCP) with examples
-- [ ] Document Liskov Substitution Principle (LSP) with examples
-- [ ] Document Interface Segregation Principle (ISP) with examples
-- [ ] Document Dependency Inversion Principle (DIP) with examples
-- [ ] Show anti-patterns (what NOT to do) for each principle
-- [ ] Map SOLID principles to DDD layers
-- [ ] Add SOLID checklist items for code review
+- [x] Document Single Responsibility Principle (SRP) with examples
+- [x] Document Open/Closed Principle (OCP) with examples
+- [x] Document Liskov Substitution Principle (LSP) with examples
+- [x] Document Interface Segregation Principle (ISP) with examples
+- [x] Document Dependency Inversion Principle (DIP) with examples
+- [x] Show anti-patterns (what NOT to do) for each principle
+- [x] Map SOLID principles to DDD layers
+- [x] Add SOLID checklist items for code review
 
 **Implementation notes:**
 - Provide both Python and Golang examples for each principle
