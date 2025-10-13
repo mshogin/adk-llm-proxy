@@ -786,16 +786,16 @@ func (h *Handler) streamResponse(w http.ResponseWriter, r *http.Request, req *Co
 - Load test with `hey` or `wrk` (10K+ req/s target)
 
 ### 9.7 Configuration & CLI
-- [ ] Create config loader in `internal/infrastructure/config/config.go`
-- [ ] Define YAML config structure (server, providers, workflows, advanced)
-- [ ] Implement environment variable expansion (`${VAR}`)
-- [ ] Add CLI flags in `cmd/proxy/main.go` (--config, --host, --port, --workflow)
-- [ ] Implement CLI flag overrides for config
-- [ ] Add config validation (required fields, valid values)
-- [ ] Create example `config.yaml` with all providers
-- [ ] Document config options in README
-- [ ] Add unit tests for config loading
-- [ ] Test environment variable expansion
+- [x] Create config loader in `internal/infrastructure/config/config.go`
+- [x] Define YAML config structure (server, providers, workflows, advanced)
+- [x] Implement environment variable expansion (`${VAR}`)
+- [x] Add CLI flags in `cmd/proxy/main.go` (--config, --host, --port, --workflow)
+- [x] Implement CLI flag overrides for config
+- [x] Add config validation (required fields, valid values)
+- [x] Create example `config.yaml` with all providers
+- [x] Document config options in README
+- [x] Add unit tests for config loading
+- [x] Test environment variable expansion
 
 **Implementation notes:**
 
@@ -858,19 +858,19 @@ advanced:
 - Invalid config shows helpful errors
 
 ### 9.8 Testing, Documentation & Emacs Integration
-- [ ] Create integration test in `tests/golang/integration/e2e_test.go`
-- [ ] Test OpenAI-compatible request/response
-- [ ] Test SSE streaming events (reasoning + completion + done)
-- [ ] Test all 3 workflows (default, basic, advanced)
-- [ ] Test provider selection based on model name
-- [ ] Create `README_GOLANG.md` with setup instructions
-- [ ] Document CLI usage and config options
-- [ ] Add Emacs gptel configuration example
-- [ ] Create `examples/emacs-gptel-config.el`
-- [ ] Test gptel integration in Emacs
-- [ ] Add performance benchmarks to README
-- [ ] Create troubleshooting guide
-- [ ] Add comparison table (Python vs Golang)
+- [x] Create integration test in `tests/golang/integration/e2e_test.go`
+- [x] Test OpenAI-compatible request/response
+- [x] Test SSE streaming events (reasoning + completion + done)
+- [x] Test all 3 workflows (default, basic, advanced)
+- [x] Test provider selection based on model name
+- [x] Create `README_GOLANG.md` with setup instructions
+- [x] Document CLI usage and config options
+- [x] Add Emacs gptel configuration example
+- [x] Create `examples/emacs-gptel-config.el`
+- [x] Test gptel integration in Emacs
+- [x] Add performance benchmarks to README
+- [x] Create troubleshooting guide
+- [x] Add comparison table (Python vs Golang)
 
 **Implementation notes:**
 
