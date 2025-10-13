@@ -2274,6 +2274,508 @@ When writing or reviewing a function:
 
 **Remember**: "Code is read far more often than it is written. Optimize for readability."
 
+## Architecture-First Planning
+
+Before writing any code, plan the architecture. This "think before code" approach prevents costly refactoring and ensures the solution aligns with SOLID, Clean Architecture, and DDD principles.
+
+### The Planning Process
+
+**Golden Rule**: "Hours of planning save weeks of refactoring."
+
+**When to use this process:**
+- Adding new features or capabilities
+- Integrating external systems
+- Creating new services or modules
+- Refactoring existing components
+
+### Step 1: Define Interfaces First
+
+**Start with abstractions, not implementations.**
+
+**Questions to answer:**
+- What operations are needed? (method signatures)
+- What are the inputs and outputs? (parameters and return types)
+- What errors can occur? (error handling contract)
+- Where should the interface live? (domain layer)
+
+**Example: Adding caching to LLM responses**
+
+```go
+// Step 1: Define interface in domain layer
+// File: internal/domain/services/cache.go
+package services
+
+import (
+    "context"
+    "time"
+)
+
+// Cache defines caching operations for LLM responses
+type Cache interface {
+    // Get retrieves cached response by key
+    // Returns nil if not found, error only on actual failures
+    Get(ctx context.Context, key string) ([]byte, error)
+    
+    // Set stores response with TTL
+    // Returns error if storage fails
+    Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+    
+    // Delete removes cached entry
+    // Returns error only on actual failures, not if key doesn't exist
+    Delete(ctx context.Context, key string) error
+    
+    // Clear removes all cached entries
+    // Use with caution in production
+    Clear(ctx context.Context) error
+}
+```
+
+**Python example:**
+```python
+# File: src/domain/services/cache_interface.py
+from abc import ABC, abstractmethod
+from datetime import timedelta
+from typing import Optional
+
+class CacheInterface(ABC):
+    """Cache interface for LLM responses"""
+    
+    @abstractmethod
+    async def get(self, key: str) -> Optional[bytes]:
+        """Retrieve cached response by key.
+        
+        Returns:
+            Cached value if found, None otherwise
+        Raises:
+            CacheException: On connection or retrieval errors
+        """
+        pass
+    
+    @abstractmethod
+    async def set(self, key: str, value: bytes, ttl: timedelta) -> None:
+        """Store response with TTL.
+        
+        Raises:
+            CacheException: On storage errors
+        """
+        pass
+    
+    @abstractmethod
+    async def delete(self, key: str) -> None:
+        """Remove cached entry. No-op if key doesn't exist."""
+        pass
+    
+    @abstractmethod
+    async def clear(self) -> None:
+        """Remove all cached entries. Use with caution."""
+        pass
+```
+
+**Why this matters:**
+- ✓ Forces you to think about contracts before implementation
+- ✓ Reveals edge cases and error scenarios early
+- ✓ Makes testing strategy clear (mock this interface)
+- ✓ Defines clear boundaries between layers
+
+### Step 2: Map to DDD Layers
+
+**Determine where each component lives in the architecture.**
+
+**Layer Decision Tree:**
+
+```
+Is it core business logic?
+├─ YES → Domain Layer (src/domain/services/)
+│   - Pure business rules
+│   - Domain models
+│   - Business interfaces
+│
+└─ NO → Is it orchestration/workflow?
+    ├─ YES → Application Layer (src/application/services/)
+    │   - Use case coordination
+    │   - Multi-service orchestration
+    │   - Transaction boundaries
+    │
+    └─ NO → Is it external integration?
+        ├─ YES → Infrastructure Layer (src/infrastructure/)
+        │   - Database adapters
+        │   - API clients
+        │   - Framework implementations
+        │
+        └─ NO → Is it HTTP/API endpoint?
+            └─ YES → Presentation Layer (src/presentation/api/)
+                - Controllers
+                - DTOs
+                - Request/Response handling
+```
+
+**Example: Caching feature mapping**
+
+```
+Feature: Add caching to LLM responses
+
+Layer Mapping:
+├─ Domain (internal/domain/services/)
+│  └─ cache.go - Cache interface definition
+│
+├─ Application (internal/application/services/)
+│  └─ orchestrator.go - Use cache in request processing
+│
+├─ Infrastructure (internal/infrastructure/cache/)
+│  ├─ redis.go - Redis implementation
+│  ├─ memory.go - In-memory implementation
+│  └─ noop.go - No-op for testing
+│
+└─ Composition Root (cmd/proxy/main.go)
+   └─ Wire up concrete implementation
+```
+
+**Validation checklist:**
+- [ ] Domain layer has no external dependencies
+- [ ] Infrastructure implements domain interfaces
+- [ ] Application coordinates but doesn't implement business logic
+- [ ] Presentation converts between HTTP and domain models
+- [ ] Dependencies point inward toward domain
+
+### Step 3: Design for Testability
+
+**Plan how you'll test before writing implementation.**
+
+**Testing Strategy Template:**
+
+```
+Component: [Name]
+Layer: [Domain/Application/Infrastructure/Presentation]
+
+Unit Tests:
+- Test with mocks (what do we mock?)
+- Test edge cases (what can go wrong?)
+- Test error handling (what errors are expected?)
+
+Integration Tests:
+- Test with real dependencies (if infrastructure)
+- Test end-to-end flow (if application/presentation)
+
+Mocking Strategy:
+- What interfaces need mocks?
+- What test data is needed?
+```
+
+**Example: Caching feature test plan**
+
+```
+Component: Cache Integration
+Layers: Domain interface, Infrastructure implementation, Application usage
+
+Unit Tests:
+1. Orchestrator with MockCache
+   - Cache hit returns cached response
+   - Cache miss proceeds to LLM call
+   - Cache set called after LLM response
+   - Cache errors don't break request
+
+2. RedisCache implementation
+   - Mock Redis client
+   - Test connection errors
+   - Test serialization/deserialization
+   - Test TTL handling
+
+Integration Tests:
+1. Real Redis integration
+   - Start Redis in Docker
+   - Test set → get round trip
+   - Test TTL expiration
+   - Test connection resilience
+
+2. End-to-end caching flow
+   - Make request twice
+   - Second request should be faster
+   - Verify cache was used
+
+Mocking Strategy:
+- Create MockCache implementing Cache interface
+- Create MockRedisClient for Redis tests
+- Use testcontainers for integration tests
+```
+
+**Dependency Injection for Testing:**
+
+```go
+// Good: Dependency injection enables testing
+type Orchestrator struct {
+    cache services.Cache  // Interface, easy to mock
+}
+
+// Test with mock
+func TestOrchestratorWithCache(t *testing.T) {
+    mockCache := &MockCache{
+        GetFunc: func(ctx context.Context, key string) ([]byte, error) {
+            return []byte("cached response"), nil
+        },
+    }
+    
+    orchestrator := NewOrchestrator(mockCache)
+    // Test cache hit scenario
+}
+```
+
+### Step 4: Plan Function Composition
+
+**Break down complex operations into small, composable functions.**
+
+**Composition Planning Template:**
+
+```
+High-level operation: [Name]
+
+Pipeline:
+1. [Step 1 - validation/input processing]
+2. [Step 2 - main business logic]
+3. [Step 3 - output processing/formatting]
+
+Functions to create:
+├─ Main orchestration function (5-10 lines)
+├─ Step 1 helper (5-15 lines)
+├─ Step 2 helper (5-15 lines)
+└─ Step 3 helper (5-15 lines)
+
+Each function:
+- Single responsibility
+- Clear name
+- Consistent abstraction level
+```
+
+**Example: Request processing with caching**
+
+```
+High-level operation: ProcessRequestWithCache
+
+Pipeline:
+1. Generate cache key from request
+2. Check cache for existing response
+3. If cache miss, call LLM
+4. Store LLM response in cache
+5. Return response
+
+Functions to create:
+├─ ProcessRequest(ctx, req) - Main orchestration (10 lines)
+├─ generateCacheKey(req) - Create cache key (5 lines)
+├─ checkCache(ctx, key) - Retrieve from cache (5 lines)
+├─ callLLM(ctx, req) - Execute LLM request (7 lines)
+└─ storeInCache(ctx, key, response) - Save to cache (5 lines)
+```
+
+**Implementation plan:**
+
+```go
+// Main orchestration (high-level)
+func (o *Orchestrator) ProcessRequest(ctx context.Context, req *Request) (*Response, error) {
+    key := generateCacheKey(req)
+    
+    // Try cache first
+    if cached, err := o.checkCache(ctx, key); err == nil {
+        return cached, nil
+    }
+    
+    // Cache miss - call LLM
+    response, err := o.callLLM(ctx, req)
+    if err != nil {
+        return nil, err
+    }
+    
+    // Store for next time
+    o.storeInCache(ctx, key, response)
+    
+    return response, nil
+}
+
+// Helper functions (low-level)
+func generateCacheKey(req *Request) string { ... }
+func (o *Orchestrator) checkCache(ctx context.Context, key string) (*Response, error) { ... }
+func (o *Orchestrator) callLLM(ctx context.Context, req *Request) (*Response, error) { ... }
+func (o *Orchestrator) storeInCache(ctx context.Context, key string, resp *Response) { ... }
+```
+
+**Benefits:**
+- ✓ Clear separation of concerns
+- ✓ Each function easily testable
+- ✓ Easy to modify individual steps
+- ✓ Self-documenting code structure
+
+### Step 5: Validate Against SOLID & Clean Architecture
+
+**Review your design against architectural principles.**
+
+**Validation Checklist:**
+
+**SOLID Principles:**
+- [ ] **SRP** - Each component has single responsibility
+- [ ] **OCP** - Can add new implementations without modifying existing code
+- [ ] **LSP** - All implementations honor interface contracts
+- [ ] **ISP** - Interfaces are small and focused
+- [ ] **DIP** - Dependencies point toward abstractions (domain interfaces)
+
+**Clean Architecture:**
+- [ ] **Dependency Rule** - All dependencies point inward
+- [ ] **Domain purity** - Domain layer has no external dependencies
+- [ ] **Use case independence** - Application logic testable without infrastructure
+- [ ] **Replaceability** - Can swap implementations (e.g., Redis → Memcached)
+
+**DDD Principles:**
+- [ ] **Correct layer placement** - Components in appropriate layers
+- [ ] **No layer skipping** - Presentation doesn't call infrastructure directly
+- [ ] **Business logic in domain** - Not scattered in infrastructure
+- [ ] **Clear boundaries** - Interfaces define layer contracts
+
+**Example: Caching design validation**
+
+```
+✓ SRP - Cache interface only handles caching operations
+✓ OCP - Can add MemcachedCache without modifying Orchestrator
+✓ LSP - RedisCache and MemoryCache both honor Cache interface
+✓ ISP - Cache interface is focused (4 methods, all related)
+✓ DIP - Orchestrator depends on Cache interface, not Redis
+
+✓ Dependency Rule - Infrastructure (Redis) → Domain (Cache interface)
+✓ Domain purity - Cache interface in domain, no Redis imports
+✓ Use case independence - Orchestrator works with MockCache
+✓ Replaceability - Can switch Redis to Memcached via config
+
+✓ Correct layer - Interface in domain, implementation in infrastructure
+✓ No layer skipping - Presentation → Application → Domain ← Infrastructure
+✓ Business logic in domain - Cache key generation is business rule
+✓ Clear boundaries - Cache interface defines contract
+```
+
+### Complete Planning Example: Adding Authentication
+
+**Feature**: Add JWT-based authentication to API
+
+**Step 1: Define interfaces**
+```go
+// Domain layer interfaces
+type Authenticator interface {
+    ValidateToken(ctx context.Context, token string) (*Claims, error)
+    GenerateToken(ctx context.Context, user *User) (string, error)
+}
+
+type UserRepository interface {
+    FindByID(ctx context.Context, id string) (*User, error)
+    FindByEmail(ctx context.Context, email string) (*User, error)
+}
+```
+
+**Step 2: Map to layers**
+```
+├─ Domain (internal/domain/services/)
+│  ├─ authenticator.go - Authenticator interface
+│  └─ user_repository.go - UserRepository interface
+│
+├─ Application (internal/application/services/)
+│  └─ auth_service.go - Login/logout use cases
+│
+├─ Infrastructure (internal/infrastructure/)
+│  ├─ auth/jwt_authenticator.go - JWT implementation
+│  └─ repositories/user_repository.go - Database implementation
+│
+└─ Presentation (internal/presentation/api/)
+   ├─ middleware/auth_middleware.go - HTTP middleware
+   └─ handlers/auth_handler.go - Login/logout endpoints
+```
+
+**Step 3: Testing strategy**
+```
+Unit Tests:
+- AuthService with mock Authenticator and UserRepository
+- JWTAuthenticator with test keys
+- Middleware with mock AuthService
+
+Integration Tests:
+- Full login flow (HTTP → Database)
+- Token validation in protected endpoints
+- Error cases (invalid token, expired token)
+```
+
+**Step 4: Function composition**
+```go
+// High-level (presentation)
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request)
+
+// Mid-level (application)
+func (s *AuthService) Authenticate(ctx context.Context, email, password string) (*AuthResponse, error)
+
+// Low-level (infrastructure)
+func (a *JWTAuthenticator) GenerateToken(ctx context.Context, user *User) (string, error)
+```
+
+**Step 5: Validation**
+```
+✓ All SOLID principles satisfied
+✓ Clean Architecture dependency rule followed
+✓ DDD layer boundaries respected
+✓ Fully testable with mocks
+✓ Can swap JWT for OAuth without changing use cases
+```
+
+### Planning Template
+
+Use this template for new features:
+
+```markdown
+# Feature: [Name]
+
+## 1. Interfaces
+- [ ] List all interfaces needed
+- [ ] Define method signatures
+- [ ] Document contracts (inputs, outputs, errors)
+- [ ] Place in domain layer
+
+## 2. Layer Mapping
+- [ ] Domain: [List components]
+- [ ] Application: [List components]
+- [ ] Infrastructure: [List components]
+- [ ] Presentation: [List components]
+
+## 3. Testing Strategy
+- [ ] Unit tests with mocks
+- [ ] Integration tests
+- [ ] Mocking strategy defined
+
+## 4. Function Composition
+- [ ] Break down into small functions
+- [ ] Each function <30 lines
+- [ ] Clear pipeline defined
+
+## 5. Architecture Validation
+- [ ] SOLID principles satisfied
+- [ ] Clean Architecture followed
+- [ ] DDD boundaries respected
+- [ ] Testability confirmed
+```
+
+### Summary: Think Before Code
+
+**Planning prevents:**
+- ❌ Wrong layer placement
+- ❌ Tight coupling
+- ❌ Untestable code
+- ❌ Violation of SOLID principles
+- ❌ Architectural debt
+
+**Planning ensures:**
+- ✓ Clean architecture from day one
+- ✓ Testable design
+- ✓ Loose coupling
+- ✓ Clear separation of concerns
+- ✓ Maintainable codebase
+
+**Time investment:**
+- 30-60 minutes of planning
+- Saves days/weeks of refactoring
+- Prevents architectural technical debt
+
+**Remember**: "If I had six hours to chop down a tree, I'd spend the first four sharpening the axe." - Abraham Lincoln
+
 ### DDD Principles & File Organization
 
 **CRITICAL: Follow strict layer separation and file placement rules**

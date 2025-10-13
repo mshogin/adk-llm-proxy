@@ -459,14 +459,14 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - Show how to reduce cognitive load through composition
 
 ### 8.5 Update Code Review Checklist
-- [ ] Add SOLID principles compliance checks to existing checklist
-- [ ] Add "Interfaces defined before implementations" check
-- [ ] Add "Dependency Rule respected" check
-- [ ] Add "Functions are small and focused (<30 lines)" check
-- [ ] Add "Function names are self-explanatory" check
-- [ ] Add "Abstractions at proper layer" check
-- [ ] Add "No business logic in infrastructure" check
-- [ ] Add "Testable design (DI, mockable interfaces)" check
+- [x] Add SOLID principles compliance checks to existing checklist
+- [x] Add "Interfaces defined before implementations" check
+- [x] Add "Dependency Rule respected" check
+- [x] Add "Functions are small and focused (<30 lines)" check
+- [x] Add "Function names are self-explanatory" check
+- [x] Add "Abstractions at proper layer" check
+- [x] Add "No business logic in infrastructure" check
+- [x] Add "Testable design (DI, mockable interfaces)" check
 
 **Implementation notes:**
 - Extend existing "Code Review Checklist" section
@@ -474,14 +474,14 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - Link checklist items to documentation sections for reference
 
 ### 8.6 Add Planning Phase Guidelines
-- [ ] Create "Architecture-First Planning" section in CLAUDE.md
-- [ ] Document Step 1: Define interfaces first
-- [ ] Document Step 2: Map to DDD layers
-- [ ] Document Step 3: Design for testability
-- [ ] Document Step 4: Plan function composition
-- [ ] Document Step 5: Validate against SOLID & Clean Architecture
-- [ ] Add example planning session (e.g., adding caching feature)
-- [ ] Create planning template for future features
+- [x] Create "Architecture-First Planning" section in CLAUDE.md
+- [x] Document Step 1: Define interfaces first
+- [x] Document Step 2: Map to DDD layers
+- [x] Document Step 3: Design for testability
+- [x] Document Step 4: Plan function composition
+- [x] Document Step 5: Validate against SOLID & Clean Architecture
+- [x] Add example planning session (e.g., adding caching feature)
+- [x] Create planning template for future features
 
 **Implementation notes:**
 - Place before "Development Workflow" section (planning comes first)
