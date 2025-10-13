@@ -607,17 +607,17 @@ type Workflow interface {
 - Benchmark throughput (>1K req/s per provider)
 
 ### 9.4 Workflows: Default, Basic, Advanced
-- [ ] Create `pkg/workflows/workflow.go` base interface
-- [ ] Implement **Default Workflow** in `pkg/workflows/default.go` (returns "Hello World")
-- [ ] Implement **Basic Workflow** in `pkg/workflows/basic.go` (intent detection via regex/keywords)
-- [ ] Implement **Advanced Workflow** in `pkg/workflows/advanced.go` (multi-agent orchestration)
-- [ ] Create Python ADK agent wrapper script (`workflows/python/adk_agent.py`)
-- [ ] Implement ADK agent caller in `internal/infrastructure/agents/adk_agent.go` (subprocess)
-- [ ] Implement OpenAI agent caller in `internal/infrastructure/agents/openai_agent.go` (native SDK)
-- [ ] Add parallel execution with goroutines in advanced workflow
-- [ ] Add timeout handling for agent calls
-- [ ] Create unit tests for each workflow
-- [ ] Benchmark workflow execution time
+- [x] Create `pkg/workflows/workflow.go` base interface
+- [x] Implement **Default Workflow** in `pkg/workflows/default.go` (returns "Hello World")
+- [x] Implement **Basic Workflow** in `pkg/workflows/basic.go` (intent detection via regex/keywords)
+- [x] Implement **Advanced Workflow** in `pkg/workflows/advanced.go` (multi-agent orchestration)
+- [x] Create Python ADK agent wrapper script (`workflows/python/adk_agent.py`)
+- [x] Implement ADK agent caller in `internal/infrastructure/agents/adk_agent.go` (subprocess)
+- [x] Implement OpenAI agent caller in `internal/infrastructure/agents/openai_agent.go` (native SDK)
+- [x] Add parallel execution with goroutines in advanced workflow
+- [x] Add timeout handling for agent calls
+- [x] Create unit tests for each workflow
+- [x] Benchmark workflow execution time
 
 **Implementation notes:**
 
