@@ -668,17 +668,17 @@ func (w *AdvancedWorkflow) Execute(ctx context.Context, input *ReasoningInput) (
 - Benchmark: Default <1ms, Basic <5ms, Advanced <500ms
 
 ### 9.5 Application Layer: Orchestration & Streaming
-- [ ] Create `Orchestrator` in `internal/application/services/orchestrator.go`
-- [ ] Implement `ProcessRequest()` with async reasoning + inference
-- [ ] Create `StreamEvent` model for SSE events
-- [ ] Implement event channel for reasoning/completion streaming
-- [ ] Add workflow selection logic (from config or header)
-- [ ] Add provider selection logic (based on model name)
-- [ ] Implement graceful error handling (send errors as events)
-- [ ] Add context cancellation handling (client disconnect)
-- [ ] Create streaming coordinator in `internal/application/services/streaming.go`
-- [ ] Add unit tests for orchestration pipeline
-- [ ] Add integration tests for full request flow
+- [x] Create `Orchestrator` in `internal/application/services/orchestrator.go`
+- [x] Implement `ProcessRequest()` with async reasoning + inference
+- [x] Create `StreamEvent` model for SSE events
+- [x] Implement event channel for reasoning/completion streaming
+- [x] Add workflow selection logic (from config or header)
+- [x] Add provider selection logic (based on model name)
+- [x] Implement graceful error handling (send errors as events)
+- [x] Add context cancellation handling (client disconnect)
+- [x] Create streaming coordinator in `internal/application/services/streaming.go`
+- [x] Add unit tests for orchestration pipeline
+- [x] Add integration tests for full request flow
 
 **Implementation notes:**
 
