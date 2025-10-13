@@ -580,16 +580,16 @@ type Workflow interface {
 ```
 
 ### 9.3 Infrastructure: LLM Provider Clients
-- [ ] Implement `OpenAIProvider` in `internal/infrastructure/providers/openai.go`
-- [ ] Implement `AnthropicProvider` in `internal/infrastructure/providers/anthropic.go`
-- [ ] Implement `DeepSeekProvider` in `internal/infrastructure/providers/deepseek.go`
-- [ ] Implement `OllamaProvider` in `internal/infrastructure/providers/ollama.go`
-- [ ] Create HTTP client pool with connection reuse
-- [ ] Implement SSE parsing for streaming responses
-- [ ] Add retry logic with exponential backoff
-- [ ] Handle provider-specific auth (API keys, headers)
-- [ ] Add unit tests with mocked HTTP responses
-- [ ] Add integration tests with real APIs (optional)
+- [x] Implement `OpenAIProvider` in `internal/infrastructure/providers/openai.go`
+- [x] Implement `AnthropicProvider` in `internal/infrastructure/providers/anthropic.go`
+- [x] Implement `DeepSeekProvider` in `internal/infrastructure/providers/deepseek.go`
+- [x] Implement `OllamaProvider` in `internal/infrastructure/providers/ollama.go`
+- [x] Create HTTP client pool with connection reuse
+- [x] Implement SSE parsing for streaming responses
+- [x] Add retry logic with exponential backoff
+- [x] Handle provider-specific auth (API keys, headers)
+- [x] Add unit tests with mocked HTTP responses
+- [x] Add integration tests with real APIs (optional)
 
 **Implementation notes:**
 - Use `net/http.Client` with custom `Transport` for pooling
