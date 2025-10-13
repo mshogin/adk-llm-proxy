@@ -1610,6 +1610,670 @@ When building a new feature, verify:
 
 **Clean Architecture + DDD + SOLID = Rock-Solid Codebase**
 
+## Function Composition & Readability
+
+Writing small, focused, self-explanatory functions is fundamental to maintainable code. Functions should read like well-written prose, making the code's intent immediately clear.
+
+### Core Principles
+
+**The Golden Rules:**
+1. **Functions should do ONE thing** (Single Responsibility Principle at function level)
+2. **Functions should be small** (20-30 lines maximum, ideally 5-15 lines)
+3. **Function names should tell you what they do** (no need to read implementation)
+4. **One level of abstraction per function** (don't mix high-level and low-level operations)
+5. **Compose complex operations from simple functions** (build up, don't build down)
+
+### Function Size Guidelines
+
+**Maximum Size: 20-30 lines** (including blank lines, excluding braces)
+
+**Why small functions?**
+- ✓ **Easier to understand** - Can grasp entire function at once
+- ✓ **Easier to test** - Small surface area, clear inputs/outputs
+- ✓ **Easier to reuse** - Focused functionality can be used elsewhere
+- ✓ **Easier to debug** - Less code to inspect when something goes wrong
+- ✓ **Self-documenting** - Name and body are sufficient documentation
+
+**Bad: Large function (80+ lines)**
+```python
+# Bad: Does too much, hard to understand
+async def process_request(self, request: dict) -> dict:
+    # Validation (15 lines)
+    if not request:
+        raise ValueError("Empty request")
+    if "model" not in request:
+        raise ValueError("Missing model")
+    if "messages" not in request:
+        raise ValueError("Missing messages")
+    # ... more validation
+    
+    # Preprocessing (20 lines)
+    messages = request["messages"]
+    for msg in messages:
+        if msg["role"] == "system":
+            msg["content"] = self._enhance_system_prompt(msg["content"])
+        elif msg["role"] == "user":
+            msg["content"] = self._sanitize_input(msg["content"])
+    # ... more preprocessing
+    
+    # Reasoning (25 lines)
+    intent = None
+    if self._looks_like_question(messages):
+        intent = "question"
+    elif self._looks_like_command(messages):
+        intent = "command"
+    # ... more reasoning logic
+    
+    # LLM call (10 lines)
+    response = await self.llm_client.create(
+        model=request["model"],
+        messages=messages
+    )
+    # ... response handling
+    
+    # Postprocessing (10 lines)
+    # ... format response
+    
+    return {"status": "success", "data": response}
+```
+
+**Good: Composed from small functions**
+```python
+# Good: Clear, focused, composed
+async def process_request(self, request: dict) -> dict:
+    """Process user request through full pipeline"""
+    validated = self._validate_request(request)
+    preprocessed = await self._preprocess_messages(validated)
+    reasoning_result = await self._analyze_intent(preprocessed)
+    llm_response = await self._call_llm(preprocessed, reasoning_result)
+    final_result = self._postprocess_response(llm_response)
+    return final_result
+
+def _validate_request(self, request: dict) -> dict:
+    """Validate request has required fields"""
+    if not request:
+        raise ValueError("Empty request")
+    self._ensure_field_exists(request, "model")
+    self._ensure_field_exists(request, "messages")
+    return request
+
+async def _preprocess_messages(self, request: dict) -> dict:
+    """Enhance and sanitize messages"""
+    messages = request["messages"]
+    enhanced = [self._enhance_message(msg) for msg in messages]
+    return {**request, "messages": enhanced}
+
+def _enhance_message(self, message: dict) -> dict:
+    """Enhance single message based on role"""
+    if message["role"] == "system":
+        return {**message, "content": self._enhance_system_prompt(message["content"])}
+    elif message["role"] == "user":
+        return {**message, "content": self._sanitize_input(message["content"])}
+    return message
+```
+
+**Benefits of composition:**
+- Each function has a clear, single purpose
+- Easy to test each piece independently
+- Easy to modify one piece without affecting others
+- Function names serve as inline documentation
+
+### Single Responsibility Per Function
+
+**Each function should have ONE reason to change.**
+
+**Bad: Multiple responsibilities**
+```go
+// Bad: Does validation, transformation, AND business logic
+func ProcessUser(user *User) error {
+    // Validation
+    if user.Email == "" {
+        return errors.New("email required")
+    }
+    if !strings.Contains(user.Email, "@") {
+        return errors.New("invalid email")
+    }
+    
+    // Transformation
+    user.Email = strings.ToLower(user.Email)
+    user.Name = strings.TrimSpace(user.Name)
+    
+    // Business logic
+    if user.IsAdmin {
+        user.Permissions = []string{"read", "write", "delete", "admin"}
+    } else {
+        user.Permissions = []string{"read"}
+    }
+    
+    // Database
+    return db.Save(user)
+}
+```
+
+**Good: Single responsibility per function**
+```go
+// Good: Each function does ONE thing
+func ProcessUser(user *User) error {
+    if err := ValidateUser(user); err != nil {
+        return fmt.Errorf("validation failed: %w", err)
+    }
+    
+    NormalizeUser(user)
+    AssignPermissions(user)
+    
+    return SaveUser(user)
+}
+
+func ValidateUser(user *User) error {
+    if user.Email == "" {
+        return errors.New("email required")
+    }
+    if !isValidEmail(user.Email) {
+        return errors.New("invalid email")
+    }
+    return nil
+}
+
+func NormalizeUser(user *User) {
+    user.Email = strings.ToLower(user.Email)
+    user.Name = strings.TrimSpace(user.Name)
+}
+
+func AssignPermissions(user *User) {
+    if user.IsAdmin {
+        user.Permissions = []string{"read", "write", "delete", "admin"}
+    } else {
+        user.Permissions = []string{"read"}
+    }
+}
+
+func SaveUser(user *User) error {
+    return db.Save(user)
+}
+```
+
+**Result:**
+- ✓ Each function can be tested independently
+- ✓ Each function can be reused elsewhere
+- ✓ Changes to validation don't affect permission logic
+- ✓ Clear separation of concerns
+
+### Self-Documenting Naming Conventions
+
+**Function names should be clear, descriptive, and tell you WHAT they do, not HOW they do it.**
+
+**Bad: Unclear names**
+```python
+# Bad: What does this do?
+def handle(data):
+    ...
+
+def process(x, y):
+    ...
+
+def do_stuff(req):
+    ...
+
+def run(config):
+    ...
+```
+
+**Good: Self-explanatory names**
+```python
+# Good: Immediately clear what each does
+def validate_email_format(email: str) -> bool:
+    ...
+
+def calculate_user_discount(user: User, order: Order) -> Decimal:
+    ...
+
+def send_welcome_email(user: User) -> None:
+    ...
+
+def parse_configuration_file(filepath: Path) -> Config:
+    ...
+```
+
+**Naming Patterns:**
+
+| Pattern | Example | Use When |
+|---------|---------|----------|
+| **verb_noun** | `calculate_total`, `send_email` | Action on a thing |
+| **is_/has_/can_** | `is_valid`, `has_permission`, `can_access` | Boolean predicates |
+| **get_/fetch_** | `get_user_by_id`, `fetch_latest_data` | Retrieving data |
+| **create_/build_** | `create_session`, `build_request` | Constructing objects |
+| **validate_/check_** | `validate_input`, `check_permissions` | Verification |
+| **parse_/format_** | `parse_json`, `format_timestamp` | Conversion |
+
+**Golang naming conventions:**
+```go
+// Good: Clear, idiomatic Go names
+func (s *Service) ProcessRequest(ctx context.Context, req *Request) (*Response, error)
+func (u *User) IsAdmin() bool
+func (c *Cache) Get(key string) ([]byte, error)
+func (p *Parser) ParseJSON(data []byte) (*Config, error)
+
+// Bad: Too abbreviated or unclear
+func (s *Service) proc(c context.Context, r *Request) (*Response, error)  // ❌
+func (u *User) adm() bool  // ❌
+func (c *Cache) g(k string) ([]byte, error)  // ❌
+```
+
+**Python naming conventions:**
+```python
+# Good: Clear, PEP 8 compliant
+def calculate_total_price(items: List[Item]) -> Decimal:
+def is_authenticated(user: User) -> bool:
+def fetch_user_by_email(email: str) -> Optional[User]:
+
+# Bad: Unclear or non-standard
+def calc(items: List[Item]) -> Decimal:  # ❌ Too abbreviated
+def authenticated(user: User) -> bool:  # ❌ Should be is_authenticated
+def user(email: str) -> Optional[User]:  # ❌ Noun, not verb
+```
+
+### Avoiding Nested Logic: Extract Helper Functions
+
+**Deep nesting hurts readability. Extract nested blocks into named functions.**
+
+**Bad: Deeply nested logic**
+```python
+# Bad: 4 levels of nesting, hard to follow
+def process_orders(orders: List[Order]) -> List[Order]:
+    processed = []
+    for order in orders:
+        if order.status == "pending":
+            if order.user.is_verified:
+                if order.total > 0:
+                    if order.items:
+                        order.status = "approved"
+                        processed.append(order)
+                    else:
+                        order.status = "rejected"
+                else:
+                    order.status = "rejected"
+            else:
+                order.status = "requires_verification"
+        else:
+            processed.append(order)
+    return processed
+```
+
+**Good: Flat structure with extracted functions**
+```python
+# Good: Flat, clear, self-documenting
+def process_orders(orders: List[Order]) -> List[Order]:
+    """Process all orders and return approved/rejected orders"""
+    return [process_order(order) for order in orders]
+
+def process_order(order: Order) -> Order:
+    """Process single order based on status and validity"""
+    if order.status != "pending":
+        return order
+    
+    if not order.user.is_verified:
+        order.status = "requires_verification"
+        return order
+    
+    if is_order_valid(order):
+        order.status = "approved"
+    else:
+        order.status = "rejected"
+    
+    return order
+
+def is_order_valid(order: Order) -> bool:
+    """Check if order meets approval criteria"""
+    return order.total > 0 and len(order.items) > 0
+```
+
+**Go example:**
+```go
+// Bad: Nested conditionals
+func ProcessOrders(orders []*Order) []*Order {
+    processed := make([]*Order, 0)
+    for _, order := range orders {
+        if order.Status == "pending" {
+            if order.User.IsVerified {
+                if order.Total > 0 {
+                    if len(order.Items) > 0 {
+                        order.Status = "approved"
+                        processed = append(processed, order)
+                    }
+                }
+            }
+        }
+    }
+    return processed
+}
+
+// Good: Flat with early returns
+func ProcessOrders(orders []*Order) []*Order {
+    processed := make([]*Order, 0, len(orders))
+    for _, order := range orders {
+        processOrder(order)
+        processed = append(processed, order)
+    }
+    return processed
+}
+
+func processOrder(order *Order) {
+    if order.Status != "pending" {
+        return
+    }
+    
+    if !order.User.IsVerified {
+        order.Status = "requires_verification"
+        return
+    }
+    
+    if isOrderValid(order) {
+        order.Status = "approved"
+    } else {
+        order.Status = "rejected"
+    }
+}
+
+func isOrderValid(order *Order) bool {
+    return order.Total > 0 && len(order.Items) > 0
+}
+```
+
+**Benefits:**
+- ✓ Reduced cognitive load (no deep nesting to track)
+- ✓ Named functions explain intent
+- ✓ Early returns keep logic flat
+- ✓ Each function easily testable
+
+### Early Return Pattern for Flat Structure
+
+**Use early returns to avoid nested if-else chains.**
+
+**Bad: Nested if-else pyramid**
+```python
+# Bad: Pyramid of doom
+def get_user_discount(user: User) -> Decimal:
+    if user.is_authenticated:
+        if user.subscription_active:
+            if user.loyalty_points > 1000:
+                return Decimal("0.30")
+            else:
+                if user.loyalty_points > 500:
+                    return Decimal("0.20")
+                else:
+                    return Decimal("0.10")
+        else:
+            return Decimal("0.05")
+    else:
+        return Decimal("0.00")
+```
+
+**Good: Early returns, flat structure**
+```python
+# Good: Guard clauses, flat and clear
+def get_user_discount(user: User) -> Decimal:
+    """Calculate discount based on user status and loyalty"""
+    if not user.is_authenticated:
+        return Decimal("0.00")
+    
+    if not user.subscription_active:
+        return Decimal("0.05")
+    
+    if user.loyalty_points > 1000:
+        return Decimal("0.30")
+    
+    if user.loyalty_points > 500:
+        return Decimal("0.20")
+    
+    return Decimal("0.10")
+```
+
+**Go example:**
+```go
+// Good: Guard clauses pattern
+func GetUserDiscount(user *User) float64 {
+    if !user.IsAuthenticated {
+        return 0.00
+    }
+    
+    if !user.SubscriptionActive {
+        return 0.05
+    }
+    
+    if user.LoyaltyPoints > 1000 {
+        return 0.30
+    }
+    
+    if user.LoyaltyPoints > 500 {
+        return 0.20
+    }
+    
+    return 0.10
+}
+```
+
+**Benefits:**
+- ✓ Linear flow (top to bottom)
+- ✓ No nesting to track
+- ✓ Easy to add new conditions
+- ✓ Clear "happy path" vs edge cases
+
+### Function Composition for Complex Operations
+
+**Build complex operations by composing simple functions.**
+
+**Bad: Monolithic function**
+```python
+# Bad: Does everything in one place
+def generate_report(user_id: str) -> Report:
+    # Fetch data (20 lines)
+    user_data = db.query("SELECT * FROM users WHERE id = ?", user_id)
+    order_data = db.query("SELECT * FROM orders WHERE user_id = ?", user_id)
+    # ... more queries
+    
+    # Transform data (30 lines)
+    total_spent = sum(order["total"] for order in order_data)
+    avg_order = total_spent / len(order_data) if order_data else 0
+    # ... more calculations
+    
+    # Generate visualizations (25 lines)
+    chart = create_chart(order_data)
+    # ... more chart logic
+    
+    # Format report (15 lines)
+    html = f"<html><body>..."
+    # ... more formatting
+    
+    return Report(html=html, chart=chart)
+```
+
+**Good: Composed from focused functions**
+```python
+# Good: Composed pipeline
+def generate_report(user_id: str) -> Report:
+    """Generate user activity report"""
+    data = fetch_user_data(user_id)
+    metrics = calculate_metrics(data)
+    visualizations = create_visualizations(data, metrics)
+    formatted_report = format_report(data, metrics, visualizations)
+    return formatted_report
+
+def fetch_user_data(user_id: str) -> UserData:
+    """Fetch all data needed for report"""
+    user = fetch_user(user_id)
+    orders = fetch_user_orders(user_id)
+    return UserData(user=user, orders=orders)
+
+def calculate_metrics(data: UserData) -> Metrics:
+    """Calculate summary metrics"""
+    return Metrics(
+        total_spent=calculate_total_spent(data.orders),
+        average_order=calculate_average_order(data.orders),
+        order_count=len(data.orders)
+    )
+
+def create_visualizations(data: UserData, metrics: Metrics) -> Visualizations:
+    """Generate charts and graphs"""
+    spending_chart = create_spending_chart(data.orders)
+    trend_chart = create_trend_chart(data.orders)
+    return Visualizations(spending=spending_chart, trend=trend_chart)
+
+def format_report(data: UserData, metrics: Metrics, viz: Visualizations) -> Report:
+    """Format final report HTML"""
+    html = render_template("report.html", data=data, metrics=metrics, viz=viz)
+    return Report(html=html, visualizations=viz)
+```
+
+**Go example:**
+```go
+// Good: Composed pipeline
+func GenerateReport(ctx context.Context, userID string) (*Report, error) {
+    data, err := fetchUserData(ctx, userID)
+    if err != nil {
+        return nil, fmt.Errorf("fetch data: %w", err)
+    }
+    
+    metrics := calculateMetrics(data)
+    visualizations := createVisualizations(data, metrics)
+    report := formatReport(data, metrics, visualizations)
+    
+    return report, nil
+}
+
+func fetchUserData(ctx context.Context, userID string) (*UserData, error) {
+    user, err := fetchUser(ctx, userID)
+    if err != nil {
+        return nil, err
+    }
+    
+    orders, err := fetchUserOrders(ctx, userID)
+    if err != nil {
+        return nil, err
+    }
+    
+    return &UserData{User: user, Orders: orders}, nil
+}
+
+// ... other composed functions
+```
+
+**Benefits of composition:**
+- ✓ Top-level function reads like documentation
+- ✓ Each step independently testable
+- ✓ Easy to modify individual steps
+- ✓ Can reuse steps in other contexts
+- ✓ Clear separation of concerns
+
+### One Level of Abstraction Per Function
+
+**Don't mix high-level concepts with low-level details in the same function.**
+
+**Bad: Mixed abstraction levels**
+```python
+# Bad: Mixes business logic with string manipulation
+def process_user_registration(email: str, password: str) -> User:
+    # High-level: business logic
+    if not is_email_available(email):
+        raise ValueError("Email already registered")
+    
+    # Low-level: string manipulation
+    email_lower = email.strip().lower()
+    if "@" not in email_lower or "." not in email_lower.split("@")[1]:
+        raise ValueError("Invalid email format")
+    
+    # High-level: security
+    if len(password) < 8:
+        raise ValueError("Password too short")
+    
+    # Low-level: cryptography
+    import hashlib
+    salt = os.urandom(32)
+    password_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    
+    # High-level: business logic
+    user = User(email=email_lower, password_hash=password_hash, salt=salt)
+    db.save(user)
+    send_welcome_email(user)
+    return user
+```
+
+**Good: Consistent abstraction level**
+```python
+# Good: High-level orchestration
+def process_user_registration(email: str, password: str) -> User:
+    """Register new user with email and password"""
+    validate_registration_data(email, password)
+    normalized_email = normalize_email(email)
+    password_hash, salt = hash_password(password)
+    user = create_user(normalized_email, password_hash, salt)
+    send_welcome_email(user)
+    return user
+
+# Mid-level: validation orchestration
+def validate_registration_data(email: str, password: str) -> None:
+    """Validate email and password meet requirements"""
+    if not is_email_available(email):
+        raise ValueError("Email already registered")
+    validate_email_format(email)
+    validate_password_strength(password)
+
+# Low-level: specific validation
+def validate_email_format(email: str) -> None:
+    """Check email has valid format"""
+    normalized = email.strip().lower()
+    if "@" not in normalized:
+        raise ValueError("Email must contain @")
+    domain = normalized.split("@")[1]
+    if "." not in domain:
+        raise ValueError("Email domain must contain .")
+
+# Low-level: cryptography
+def hash_password(password: str) -> tuple[bytes, bytes]:
+    """Hash password with salt using PBKDF2"""
+    import hashlib
+    salt = os.urandom(32)
+    password_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    return password_hash, salt
+```
+
+**Result:**
+- ✓ Each function operates at consistent abstraction level
+- ✓ Reading any function doesn't require understanding lower-level details
+- ✓ Can replace low-level implementations without affecting high-level logic
+
+### Function Composition Checklist
+
+When writing or reviewing a function:
+
+- [ ] **Is it small?** (<30 lines, ideally 5-15 lines)
+- [ ] **Does it do ONE thing?** (Single responsibility)
+- [ ] **Is the name self-explanatory?** (No need to read implementation to understand)
+- [ ] **Is nesting minimized?** (Max 2 levels, prefer early returns)
+- [ ] **Is abstraction level consistent?** (All operations at same conceptual level)
+- [ ] **Can it be tested easily?** (Clear inputs/outputs, no hidden dependencies)
+- [ ] **Can it be reused?** (Not tightly coupled to specific context)
+- [ ] **Does it read like prose?** (Function body tells a clear story)
+
+### Summary: The Art of Small Functions
+
+**Key Takeaways:**
+1. **Small functions are better** - Aim for 5-15 lines, max 20-30 lines
+2. **Compose complex operations** - Build up from simple, focused functions
+3. **Name functions clearly** - Function name should explain what it does
+4. **Avoid nesting** - Use early returns and extract helper functions
+5. **One abstraction level** - Don't mix high-level and low-level operations
+6. **Single responsibility** - Each function should do one thing well
+
+**Benefits of this approach:**
+- ✓ **Readable** - Code reads like well-written prose
+- ✓ **Testable** - Small functions are easy to test
+- ✓ **Debuggable** - Easier to find and fix bugs
+- ✓ **Maintainable** - Changes are localized and safe
+- ✓ **Reusable** - Small, focused functions can be used elsewhere
+- ✓ **Self-documenting** - Good names and structure reduce need for comments
+
+**Remember**: "Code is read far more often than it is written. Optimize for readability."
+
 ### DDD Principles & File Organization
 
 **CRITICAL: Follow strict layer separation and file placement rules**
