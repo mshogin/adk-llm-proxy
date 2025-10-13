@@ -723,18 +723,18 @@ func (o *Orchestrator) ProcessRequest(ctx context.Context, req *CompletionReques
 - Benchmark latency and throughput
 
 ### 9.6 Presentation Layer: OpenAI-Compatible API
-- [ ] Create HTTP handler in `internal/presentation/api/handlers.go`
-- [ ] Implement `POST /v1/chat/completions` (OpenAI-compatible)
-- [ ] Implement `GET /health` endpoint
-- [ ] Implement `GET /workflows` endpoint (list available workflows)
-- [ ] Add SSE streaming response handler
-- [ ] Add non-streaming (buffered) response handler
-- [ ] Create middleware in `internal/presentation/api/middleware.go` (logging, CORS, recovery)
-- [ ] Add workflow selection via `X-Workflow` header
-- [ ] Implement graceful shutdown (SIGTERM/SIGINT)
-- [ ] Add request validation middleware
-- [ ] Create unit tests for handlers
-- [ ] Create integration tests with httptest
+- [x] Create HTTP handler in `internal/presentation/api/handlers.go`
+- [x] Implement `POST /v1/chat/completions` (OpenAI-compatible)
+- [x] Implement `GET /health` endpoint
+- [x] Implement `GET /workflows` endpoint (list available workflows)
+- [x] Add SSE streaming response handler
+- [x] Add non-streaming (buffered) response handler
+- [x] Create middleware in `internal/presentation/api/middleware.go` (logging, CORS, recovery)
+- [x] Add workflow selection via `X-Workflow` header
+- [x] Implement graceful shutdown (SIGTERM/SIGINT)
+- [x] Add request validation middleware
+- [x] Create unit tests for handlers
+- [x] Create integration tests with httptest
 
 **Implementation notes:**
 
