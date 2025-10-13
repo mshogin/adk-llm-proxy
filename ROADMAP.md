@@ -519,15 +519,15 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - **Concurrency**: Goroutines + channels
 
 ### 9.1 Project Structure & Foundation
-- [ ] Create `src/golang/` directory structure (cmd, internal, pkg)
-- [ ] Initialize Go module (`go mod init`)
-- [ ] Create `cmd/proxy/main.go` entry point
-- [ ] Set up `internal/` with DDD layers (domain, application, infrastructure, presentation)
-- [ ] Create `pkg/workflows/` for public workflow implementations
-- [ ] Add Go dependencies (chi, yaml.v3, testify)
-- [ ] Create `config.yaml` for Golang proxy
-- [ ] Set up `tests/golang/` directory mirroring `src/golang/`
-- [ ] Add `Makefile` targets for Go (build, test, run)
+- [x] Create `src/golang/` directory structure (cmd, internal, pkg)
+- [x] Initialize Go module (`go mod init`)
+- [x] Create `cmd/proxy/main.go` entry point
+- [x] Set up `internal/` with DDD layers (domain, application, infrastructure, presentation)
+- [x] Create `pkg/workflows/` for public workflow implementations
+- [x] Add Go dependencies (chi, yaml.v3, testify)
+- [x] Create `config.yaml` for Golang proxy
+- [x] Set up `tests/golang/` directory mirroring `src/golang/`
+- [x] Add `Makefile` targets for Go (build, test, run)
 
 **Implementation notes:**
 - Follow Go project layout (cmd/, internal/, pkg/)

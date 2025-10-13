@@ -1,0 +1,94 @@
+# ADK LLM Proxy - Golang Configuration
+# High-performance OpenAI-compatible proxy with reasoning workflows
+
+server:
+  host: "0.0.0.0"
+  port: 8001
+
+# LLM Provider Configuration
+providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    enabled: true
+    timeout: 30s
+    max_retries: 3
+
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    base_url: "https://api.anthropic.com/v1"
+    enabled: false
+    timeout: 30s
+    max_retries: 3
+
+  deepseek:
+    api_key: "${DEEPSEEK_API_KEY}"
+    base_url: "https://api.deepseek.com/v1"
+    enabled: false
+    timeout: 30s
+    max_retries: 3
+
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    enabled: false
+    timeout: 60s
+
+# Workflow Configuration
+workflows:
+  default: "basic"  # Options: default, basic, advanced
+  enabled:
+    - "default"     # Simple hello world
+    - "basic"       # Intent detection via regex/keywords
+    - "advanced"    # Multi-agent orchestration (ADK + OpenAI)
+
+# Advanced Workflow Configuration
+advanced:
+  # Python ADK agent path (relative to project root)
+  adk_agent_path: "workflows/python/adk_agent.py"
+
+  # OpenAI API key for native Go agent
+  openai_api_key: "${OPENAI_API_KEY}"
+  openai_model: "gpt-4o-mini"
+
+  # Agent execution settings
+  adk_timeout: 10s
+  openai_timeout: 10s
+  parallel_execution: true
+
+# Performance Tuning
+performance:
+  # HTTP server settings
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 60s
+
+  # Connection pooling
+  max_idle_conns: 100
+  max_conns_per_host: 10
+  idle_conn_timeout: 90s
+
+  # Streaming settings
+  stream_buffer_size: 10
+  flush_interval: 100ms
+
+# Logging Configuration
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json" # json, text
+  output: "stdout"
+
+# Security Configuration
+security:
+  # Enable API key authentication
+  require_auth: false
+  api_keys: []
+
+  # CORS settings
+  cors_enabled: true
+  cors_origins:
+    - "*"
+
+  # Rate limiting
+  rate_limit_enabled: false
+  rate_limit_requests: 100
+  rate_limit_window: "1m"

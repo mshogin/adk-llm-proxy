@@ -156,3 +156,44 @@ check-config: ## Validate configuration files
 	@test -f config.yaml && echo "$(GREEN)✅ config.yaml exists$(RESET)" || echo "$(RED)❌ config.yaml missing$(RESET)"
 	@test -f requirements.txt && echo "$(GREEN)✅ requirements.txt exists$(RESET)" || echo "$(RED)❌ requirements.txt missing$(RESET)"
 	@$(PYTHON) -c "from src.infrastructure.config.config import config; print('$(GREEN)✅ Configuration loads successfully$(RESET)')" 2>/dev/null || echo "$(RED)❌ Configuration load failed$(RESET)"
+
+# Golang targets
+.PHONY: go-build go-test go-run go-clean go-lint
+
+go-build: ## Build Golang proxy binary
+	@echo "$(BLUE)🔨 Building Golang proxy...$(RESET)"
+	@go build -o bin/proxy ./src/golang/cmd/proxy
+	@echo "$(GREEN)✅ Build complete: bin/proxy$(RESET)"
+
+go-test: ## Run Golang tests
+	@echo "$(BLUE)🧪 Running Golang tests...$(RESET)"
+	@go test ./src/golang/... -v -cover
+	@echo "$(GREEN)✅ Tests complete$(RESET)"
+
+go-test-coverage: ## Run Golang tests with coverage report
+	@echo "$(BLUE)📊 Running Golang tests with coverage...$(RESET)"
+	@go test ./src/golang/... -coverprofile=coverage.out
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "$(GREEN)✅ Coverage report generated: coverage.html$(RESET)"
+
+go-run: go-build ## Run Golang proxy
+	@echo "$(BLUE)🚀 Starting Golang proxy...$(RESET)"
+	@./bin/proxy --config config-golang.yaml --port 8001
+
+go-clean: ## Clean Golang build artifacts
+	@echo "$(RED)🧹 Cleaning Golang build artifacts...$(RESET)"
+	@rm -f bin/proxy coverage.out coverage.html
+	@go clean
+	@echo "$(GREEN)✅ Cleanup complete$(RESET)"
+
+go-lint: ## Run Golang linters
+	@echo "$(BLUE)🔍 Running Golang linters...$(RESET)"
+	@gofmt -l src/golang/ | grep . && echo "$(RED)❌ Code needs formatting$(RESET)" && exit 1 || echo "$(GREEN)✅ Code is formatted$(RESET)"
+	@go vet ./src/golang/...
+	@echo "$(GREEN)✅ Lint checks passed$(RESET)"
+
+go-deps: ## Download Golang dependencies
+	@echo "$(BLUE)📦 Downloading Golang dependencies...$(RESET)"
+	@go mod download
+	@go mod tidy
+	@echo "$(GREEN)✅ Dependencies updated$(RESET)"
