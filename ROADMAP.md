@@ -371,6 +371,573 @@ A comprehensive roadmap for implementing Model Context Protocol (MCP) support in
 - [x] Add troubleshooting guides
 - [x] Create video tutorials and demos
 
+## Phase 8: Architectural Best Practices Enhancement
+**Goal**: Strengthen Claude instructions with SOLID, Clean Architecture, interface-driven design, and function composition guidelines
+
+**Current State:**
+- ✅ DDD architecture well-documented and implemented
+- ✅ Layer separation enforced (domain/application/infrastructure/presentation)
+- ⬜ SOLID principles mentioned but not deeply explained
+- ⬜ Interface-driven design not explicitly documented
+- ⬜ Clean Architecture principles (Uncle Bob) not formally referenced
+- ⬜ Function composition guidelines minimal
+
+**Target State:**
+- ✅ SOLID principles with practical examples for Python and Golang
+- ✅ Interface-first development approach documented
+- ✅ Clean Architecture mapping to project structure
+- ✅ Small, focused, self-explanatory function guidelines
+- ✅ Architecture-first planning process documented
+- ✅ Enhanced code review checklist with architectural criteria
+
+### 8.1 Add SOLID Principles Section
+- [x] Create "SOLID Principles in Practice" section in CLAUDE.md
+- [ ] Document Single Responsibility Principle (SRP) with examples
+- [ ] Document Open/Closed Principle (OCP) with examples
+- [ ] Document Liskov Substitution Principle (LSP) with examples
+- [ ] Document Interface Segregation Principle (ISP) with examples
+- [ ] Document Dependency Inversion Principle (DIP) with examples
+- [ ] Show anti-patterns (what NOT to do) for each principle
+- [ ] Map SOLID principles to DDD layers
+- [ ] Add SOLID checklist items for code review
+
+**Implementation notes:**
+- Provide both Python and Golang examples for each principle
+- Use existing project structure as reference (e.g., MCP client abstractions)
+- Show how DIP enables testability through dependency injection
+- Emphasize SRP alignment with service separation in DDD
+
+### 8.2 Add Interface-Driven Design Guidelines
+- [ ] Create "Interface-Driven Design" section in CLAUDE.md
+- [ ] Document Python interface patterns (ABC, Protocol, type hints)
+- [ ] Document Golang interface patterns (implicit implementation, composition)
+- [ ] Explain when to define interfaces (during planning phase)
+- [ ] Document interface segregation best practices
+- [ ] Add dependency injection patterns for both languages
+- [ ] Show mock-friendly design examples
+- [ ] Add interface design to planning checklist
+
+**Implementation notes:**
+- Include Abstract Base Classes (ABC) examples for Python
+- Show Python Protocol (PEP 544) for structural subtyping
+- Demonstrate Golang's implicit interface satisfaction
+- Emphasize small, focused interfaces (ISP)
+- Show constructor injection pattern for testability
+
+### 8.3 Add Clean Architecture Section
+- [ ] Create "Clean Architecture Principles (Uncle Bob)" section in CLAUDE.md
+- [ ] Explain the Dependency Rule (dependencies point inward)
+- [ ] Map Clean Architecture circles to project layers
+- [ ] Document Entities → src/domain/models/ mapping
+- [ ] Document Use Cases → src/application/services/ mapping
+- [ ] Document Interface Adapters → src/infrastructure/, src/presentation/ mapping
+- [ ] Show dependency flow diagrams (ASCII art or description)
+- [ ] Explain why domain layer has no external dependencies
+- [ ] Document dependency inversion usage (interfaces in domain)
+
+**Implementation notes:**
+- Reference Robert C. Martin's Clean Architecture book
+- Show how current DDD structure already follows Clean Architecture
+- Emphasize "dependencies point inward" as core rule
+- Illustrate with examples from existing codebase (e.g., reasoning service)
+
+### 8.4 Add Function Composition Guidelines
+- [ ] Create "Function Composition & Readability" section in CLAUDE.md
+- [ ] Document function size guidelines (20-30 lines max)
+- [ ] Explain Single Responsibility per function
+- [ ] Document self-documenting naming conventions
+- [ ] Show how to avoid nested logic (extract helper functions)
+- [ ] Demonstrate function composition for complex operations
+- [ ] Document early return pattern for flat structure
+- [ ] Add Python function composition examples
+- [ ] Add Golang function composition examples
+
+**Implementation notes:**
+- Show bad examples (large, nested functions) vs good (small, composed)
+- Emphasize "one level of abstraction per function"
+- Demonstrate how small functions serve as inline documentation
+- Show how to reduce cognitive load through composition
+
+### 8.5 Update Code Review Checklist
+- [ ] Add SOLID principles compliance checks to existing checklist
+- [ ] Add "Interfaces defined before implementations" check
+- [ ] Add "Dependency Rule respected" check
+- [ ] Add "Functions are small and focused (<30 lines)" check
+- [ ] Add "Function names are self-explanatory" check
+- [ ] Add "Abstractions at proper layer" check
+- [ ] Add "No business logic in infrastructure" check
+- [ ] Add "Testable design (DI, mockable interfaces)" check
+
+**Implementation notes:**
+- Extend existing "Code Review Checklist" section
+- Make checklist actionable and measurable
+- Link checklist items to documentation sections for reference
+
+### 8.6 Add Planning Phase Guidelines
+- [ ] Create "Architecture-First Planning" section in CLAUDE.md
+- [ ] Document Step 1: Define interfaces first
+- [ ] Document Step 2: Map to DDD layers
+- [ ] Document Step 3: Design for testability
+- [ ] Document Step 4: Plan function composition
+- [ ] Document Step 5: Validate against SOLID & Clean Architecture
+- [ ] Add example planning session (e.g., adding caching feature)
+- [ ] Create planning template for future features
+
+**Implementation notes:**
+- Place before "Development Workflow" section (planning comes first)
+- Show complete planning example with interface definitions
+- Demonstrate how to validate architecture decisions early
+- Emphasize "think before code" approach
+
+## Phase 9: Golang High-Performance Proxy Implementation
+**Goal**: Create production-ready Golang implementation of ADK LLM Proxy with OpenAI-compatible API, custom reasoning workflows, and async streaming for Emacs gptel integration
+
+**Current State:**
+- ✅ Python implementation fully functional with MCP integration
+- ✅ DDD architecture well-established
+- ⬜ No Golang implementation exists
+- ⬜ Need high-performance alternative for production use
+- ⬜ Want single-binary deployment option
+
+**Target State:**
+- ✅ Golang proxy with 10K+ req/s throughput
+- ✅ OpenAI API compatibility (works with gptel, curl, etc.)
+- ✅ Multi-provider support (OpenAI, Anthropic, DeepSeek, Ollama)
+- ✅ 3 reasoning workflows (default, basic, advanced)
+- ✅ Async streaming (reasoning + inference in parallel)
+- ✅ Single binary deployment
+- ✅ Emacs gptel integration tested
+
+**Use Case:** Emacs gptel → Golang Proxy (reasoning) → LLM Provider
+
+**Technology Stack:**
+- **Language**: Go 1.21+
+- **Router**: `go-chi/chi` (lightweight, fast)
+- **Config**: `gopkg.in/yaml.v3`
+- **Testing**: `testing` + `testify`
+- **Streaming**: Server-Sent Events (SSE)
+- **Concurrency**: Goroutines + channels
+
+### 9.1 Project Structure & Foundation
+- [ ] Create `src/golang/` directory structure (cmd, internal, pkg)
+- [ ] Initialize Go module (`go mod init`)
+- [ ] Create `cmd/proxy/main.go` entry point
+- [ ] Set up `internal/` with DDD layers (domain, application, infrastructure, presentation)
+- [ ] Create `pkg/workflows/` for public workflow implementations
+- [ ] Add Go dependencies (chi, yaml.v3, testify)
+- [ ] Create `config.yaml` for Golang proxy
+- [ ] Set up `tests/golang/` directory mirroring `src/golang/`
+- [ ] Add `Makefile` targets for Go (build, test, run)
+
+**Implementation notes:**
+- Follow Go project layout (cmd/, internal/, pkg/)
+- Mirror DDD architecture from Python version
+- Use Go modules for dependency management
+- Keep internal/ private, pkg/ public
+- Single binary output: `bin/proxy`
+
+**Files to create:**
+```
+src/golang/
+├── cmd/proxy/main.go
+├── internal/
+│   ├── domain/{models,services}/
+│   ├── application/services/
+│   ├── infrastructure/{config,providers,agents}/
+│   └── presentation/api/
+├── pkg/workflows/
+└── go.mod
+```
+
+### 9.2 Domain Layer: Interfaces & Models
+- [ ] Define `ILLMProvider` interface in `internal/domain/services/provider.go`
+- [ ] Define `IWorkflow` interface in `internal/domain/services/workflow.go`
+- [ ] Define `IReasoningService` interface in `internal/domain/services/reasoning.go`
+- [ ] Create `CompletionRequest` model in `internal/domain/models/request.go`
+- [ ] Create `CompletionChunk` model (OpenAI-compatible) in `internal/domain/models/response.go`
+- [ ] Create `ReasoningResult` model in `internal/domain/models/reasoning_result.go`
+- [ ] Add unit tests for model serialization
+- [ ] Validate OpenAI schema compatibility
+
+**Implementation notes:**
+- Use **interfaces** for all abstractions (Dependency Inversion Principle)
+- Keep domain layer **pure** (no external deps except stdlib)
+- Use `context.Context` for cancellation
+- Add JSON tags for OpenAI API compatibility
+- Models must be **immutable** where possible
+
+**Interface examples:**
+```go
+type LLMProvider interface {
+    Name() string
+    StreamCompletion(ctx context.Context, req *CompletionRequest) (<-chan CompletionChunk, error)
+}
+
+type Workflow interface {
+    Name() string
+    Execute(ctx context.Context, input *ReasoningInput) (*ReasoningResult, error)
+}
+```
+
+### 9.3 Infrastructure: LLM Provider Clients
+- [ ] Implement `OpenAIProvider` in `internal/infrastructure/providers/openai.go`
+- [ ] Implement `AnthropicProvider` in `internal/infrastructure/providers/anthropic.go`
+- [ ] Implement `DeepSeekProvider` in `internal/infrastructure/providers/deepseek.go`
+- [ ] Implement `OllamaProvider` in `internal/infrastructure/providers/ollama.go`
+- [ ] Create HTTP client pool with connection reuse
+- [ ] Implement SSE parsing for streaming responses
+- [ ] Add retry logic with exponential backoff
+- [ ] Handle provider-specific auth (API keys, headers)
+- [ ] Add unit tests with mocked HTTP responses
+- [ ] Add integration tests with real APIs (optional)
+
+**Implementation notes:**
+- Use `net/http.Client` with custom `Transport` for pooling
+- Parse SSE stream line-by-line (`data: {...}\n\n`)
+- Use **goroutines + channels** for async streaming
+- Handle rate limiting (429) and retries
+- Provider-specific URL patterns:
+  - OpenAI: `https://api.openai.com/v1/chat/completions`
+  - Anthropic: `https://api.anthropic.com/v1/messages`
+  - Ollama: `http://localhost:11434/v1/chat/completions`
+
+**Validation:**
+- Test streaming and non-streaming modes
+- Test timeout and cancellation
+- Benchmark throughput (>1K req/s per provider)
+
+### 9.4 Workflows: Default, Basic, Advanced
+- [ ] Create `pkg/workflows/workflow.go` base interface
+- [ ] Implement **Default Workflow** in `pkg/workflows/default.go` (returns "Hello World")
+- [ ] Implement **Basic Workflow** in `pkg/workflows/basic.go` (intent detection via regex/keywords)
+- [ ] Implement **Advanced Workflow** in `pkg/workflows/advanced.go` (multi-agent orchestration)
+- [ ] Create Python ADK agent wrapper script (`workflows/python/adk_agent.py`)
+- [ ] Implement ADK agent caller in `internal/infrastructure/agents/adk_agent.go` (subprocess)
+- [ ] Implement OpenAI agent caller in `internal/infrastructure/agents/openai_agent.go` (native SDK)
+- [ ] Add parallel execution with goroutines in advanced workflow
+- [ ] Add timeout handling for agent calls
+- [ ] Create unit tests for each workflow
+- [ ] Benchmark workflow execution time
+
+**Implementation notes:**
+
+**Default Workflow:**
+```go
+func (w *DefaultWorkflow) Execute(ctx context.Context, input *ReasoningInput) (*ReasoningResult, error) {
+    return &ReasoningResult{Message: "Hello World"}, nil
+}
+```
+
+**Basic Workflow:**
+```go
+// Detect intent using regex/keywords (no LLM call)
+func (w *BasicWorkflow) Execute(ctx context.Context, input *ReasoningInput) (*ReasoningResult, error) {
+    intent := detectIntent(input.Messages)  // Simple pattern matching
+    return &ReasoningResult{Message: fmt.Sprintf("Intent: %s", intent)}, nil
+}
+```
+
+**Advanced Workflow:**
+```go
+// Multi-agent: ADK (Python subprocess) + OpenAI (native Go)
+func (w *AdvancedWorkflow) Execute(ctx context.Context, input *ReasoningInput) (*ReasoningResult, error) {
+    adkChan := make(chan *AgentResult)
+    openaiChan := make(chan *AgentResult)
+    
+    // Parallel agent execution
+    go w.callADKAgent(ctx, input, adkChan)
+    go w.callOpenAIAgent(ctx, input, openaiChan)
+    
+    // Wait for both with timeout
+    adk := <-adkChan
+    openai := <-openaiChan
+    
+    return w.aggregateResults(adk, openai), nil
+}
+```
+
+**ADK Agent (Python subprocess):**
+- Create `workflows/python/adk_agent.py` wrapper
+- Use `os/exec` to call Python script with JSON stdin/stdout
+- Parse JSON response from subprocess
+
+**Validation:**
+- Test each workflow independently
+- Test workflow selection based on config
+- Test ADK subprocess communication
+- Benchmark: Default <1ms, Basic <5ms, Advanced <500ms
+
+### 9.5 Application Layer: Orchestration & Streaming
+- [ ] Create `Orchestrator` in `internal/application/services/orchestrator.go`
+- [ ] Implement `ProcessRequest()` with async reasoning + inference
+- [ ] Create `StreamEvent` model for SSE events
+- [ ] Implement event channel for reasoning/completion streaming
+- [ ] Add workflow selection logic (from config or header)
+- [ ] Add provider selection logic (based on model name)
+- [ ] Implement graceful error handling (send errors as events)
+- [ ] Add context cancellation handling (client disconnect)
+- [ ] Create streaming coordinator in `internal/application/services/streaming.go`
+- [ ] Add unit tests for orchestration pipeline
+- [ ] Add integration tests for full request flow
+
+**Implementation notes:**
+
+**Async Pipeline:**
+```go
+func (o *Orchestrator) ProcessRequest(ctx context.Context, req *CompletionRequest, workflow string) (<-chan StreamEvent, error) {
+    eventChan := make(chan StreamEvent, 10)
+    
+    go func() {
+        defer close(eventChan)
+        
+        // Phase 1: Reasoning (async)
+        wf := o.workflows[workflow]
+        reasoningResult, err := wf.Execute(ctx, extractInput(req))
+        eventChan <- StreamEvent{Type: "reasoning", Data: reasoningResult}
+        
+        // Phase 2: LLM Inference (async streaming)
+        provider := o.getProvider(req.Model)
+        chunkChan, _ := provider.StreamCompletion(ctx, req)
+        
+        for chunk := range chunkChan {
+            eventChan <- StreamEvent{Type: "completion", Data: chunk}
+        }
+        
+        eventChan <- StreamEvent{Type: "done"}
+    }()
+    
+    return eventChan, nil
+}
+```
+
+**Event Types:**
+- `reasoning`: Workflow result
+- `completion`: LLM chunk
+- `error`: Error message
+- `done`: Stream complete
+
+**Validation:**
+- Test reasoning + inference parallelism
+- Test client disconnect (context cancellation)
+- Test concurrent request handling (100+ parallel)
+- Benchmark latency and throughput
+
+### 9.6 Presentation Layer: OpenAI-Compatible API
+- [ ] Create HTTP handler in `internal/presentation/api/handlers.go`
+- [ ] Implement `POST /v1/chat/completions` (OpenAI-compatible)
+- [ ] Implement `GET /health` endpoint
+- [ ] Implement `GET /workflows` endpoint (list available workflows)
+- [ ] Add SSE streaming response handler
+- [ ] Add non-streaming (buffered) response handler
+- [ ] Create middleware in `internal/presentation/api/middleware.go` (logging, CORS, recovery)
+- [ ] Add workflow selection via `X-Workflow` header
+- [ ] Implement graceful shutdown (SIGTERM/SIGINT)
+- [ ] Add request validation middleware
+- [ ] Create unit tests for handlers
+- [ ] Create integration tests with httptest
+
+**Implementation notes:**
+
+**OpenAI-Compatible Endpoint:**
+```go
+// POST /v1/chat/completions
+func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
+    var req models.CompletionRequest
+    json.NewDecoder(r.Body).Decode(&req)
+    
+    workflow := r.Header.Get("X-Workflow")
+    if workflow == "" {
+        workflow = h.config.Workflows.Default
+    }
+    
+    if req.Stream {
+        h.streamResponse(w, r, &req, workflow)
+    } else {
+        h.bufferResponse(w, r, &req, workflow)
+    }
+}
+```
+
+**SSE Streaming:**
+```go
+func (h *Handler) streamResponse(w http.ResponseWriter, r *http.Request, req *CompletionRequest, workflow string) {
+    w.Header().Set("Content-Type", "text/event-stream")
+    w.Header().Set("Cache-Control", "no-cache")
+    
+    flusher := w.(http.Flusher)
+    eventChan, _ := h.orchestrator.ProcessRequest(r.Context(), req, workflow)
+    
+    for event := range eventChan {
+        fmt.Fprintf(w, "data: %s\n\n", formatSSE(event))
+        flusher.Flush()
+    }
+}
+```
+
+**Endpoints:**
+- `POST /v1/chat/completions` (OpenAI-compatible)
+- `GET /health` (health check)
+- `GET /workflows` (list workflows)
+
+**Validation:**
+- Test with `curl` (OpenAI request format)
+- Test SSE streaming in browser
+- Test workflow selection via header
+- Load test with `hey` or `wrk` (10K+ req/s target)
+
+### 9.7 Configuration & CLI
+- [ ] Create config loader in `internal/infrastructure/config/config.go`
+- [ ] Define YAML config structure (server, providers, workflows, advanced)
+- [ ] Implement environment variable expansion (`${VAR}`)
+- [ ] Add CLI flags in `cmd/proxy/main.go` (--config, --host, --port, --workflow)
+- [ ] Implement CLI flag overrides for config
+- [ ] Add config validation (required fields, valid values)
+- [ ] Create example `config.yaml` with all providers
+- [ ] Document config options in README
+- [ ] Add unit tests for config loading
+- [ ] Test environment variable expansion
+
+**Implementation notes:**
+
+**Config Structure:**
+```go
+type Config struct {
+    Server struct {
+        Host string `yaml:"host"`
+        Port int    `yaml:"port"`
+    } `yaml:"server"`
+    
+    Providers map[string]ProviderConfig `yaml:"providers"`
+    
+    Workflows struct {
+        Default string   `yaml:"default"`
+        Enabled []string `yaml:"enabled"`
+    } `yaml:"workflows"`
+    
+    Advanced AdvancedConfig `yaml:"advanced"`
+}
+```
+
+**Example config.yaml:**
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8001
+
+providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    enabled: true
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    base_url: "https://api.anthropic.com/v1"
+    enabled: true
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    enabled: true
+
+workflows:
+  default: "basic"
+  enabled: ["default", "basic", "advanced"]
+
+advanced:
+  adk_agent_path: "workflows/python/adk_agent.py"
+  openai_api_key: "${OPENAI_API_KEY}"
+```
+
+**CLI Flags:**
+```bash
+./proxy --config config.yaml --port 8001 --workflow basic
+```
+
+**Validation:**
+- Config loads from YAML
+- CLI flags override config values
+- Environment variables expand correctly
+- Invalid config shows helpful errors
+
+### 9.8 Testing, Documentation & Emacs Integration
+- [ ] Create integration test in `tests/golang/integration/e2e_test.go`
+- [ ] Test OpenAI-compatible request/response
+- [ ] Test SSE streaming events (reasoning + completion + done)
+- [ ] Test all 3 workflows (default, basic, advanced)
+- [ ] Test provider selection based on model name
+- [ ] Create `README_GOLANG.md` with setup instructions
+- [ ] Document CLI usage and config options
+- [ ] Add Emacs gptel configuration example
+- [ ] Create `examples/emacs-gptel-config.el`
+- [ ] Test gptel integration in Emacs
+- [ ] Add performance benchmarks to README
+- [ ] Create troubleshooting guide
+- [ ] Add comparison table (Python vs Golang)
+
+**Implementation notes:**
+
+**E2E Test:**
+```go
+func TestChatCompletionsStreaming(t *testing.T) {
+    server := setupTestServer()
+    defer server.Close()
+    
+    req := makeOpenAIRequest("gpt-4o-mini", "Hello", true)
+    resp := sendRequest(server, req)
+    
+    assert.Equal(t, 200, resp.StatusCode)
+    assert.Equal(t, "text/event-stream", resp.Header.Get("Content-Type"))
+    
+    events := parseSSEEvents(resp.Body)
+    assert.Contains(t, events, "reasoning")
+    assert.Contains(t, events, "completion")
+    assert.Contains(t, events, "done")
+}
+```
+
+**Emacs gptel Config:**
+```elisp
+;; .emacs.d/init.el or examples/emacs-gptel-config.el
+(use-package gptel
+  :config
+  (setq gptel-backend
+        (gptel-make-openai "ADK Proxy (Golang)"
+          :host "localhost:8001"
+          :endpoint "/v1/chat/completions"
+          :stream t
+          :key "dummy"  ; Not required for local proxy
+          :models '("gpt-4o-mini" "gpt-4o" "claude-3-5-sonnet" "deepseek-chat")))
+  
+  ;; Set workflow via custom header
+  (setq gptel-api-extra-headers
+        '(("X-Workflow" . "basic"))))  ; or "default", "advanced"
+
+;; Usage:
+;; M-x gptel
+;; Type your prompt, press C-c RET
+```
+
+**README_GOLANG.md Contents:**
+- Quick start (build, run, test)
+- Configuration guide
+- Workflow descriptions
+- API endpoints
+- Emacs integration
+- Performance benchmarks
+- Troubleshooting
+- Python vs Golang comparison
+
+**Validation:**
+- All tests pass (`go test ./...`)
+- E2E test with real LLM providers
+- gptel works in Emacs
+- README instructions accurate
+- Performance benchmarks documented (throughput, latency)
+
+**Performance Targets:**
+- Throughput: >10K req/s (non-streaming)
+- Latency: <10ms (p50), <50ms (p99)
+- Memory: <100MB (idle), <500MB (load)
+- Startup: <100ms
+
 ---
 
 ## 🎯 Implementation Notes
