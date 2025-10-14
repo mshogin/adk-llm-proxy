@@ -70,15 +70,37 @@ func (h *Handler) streamResponse(w http.ResponseWriter, r *http.Request, req *mo
 
 	// Stream events
 	for event := range eventChan {
-		// Convert event to SSE format
-		sseData, err := event.ToSSE()
-		if err != nil {
-			continue
-		}
+		switch event.Type {
+		case "reasoning":
+			// Send reasoning as a comment (not visible to OpenAI clients)
+			if _, err := w.Write([]byte(": reasoning event\n\n")); err != nil {
+				return
+			}
 
-		// Write event
-		if _, err := w.Write([]byte(sseData)); err != nil {
-			return // Client disconnected
+		case "completion":
+			// Send OpenAI chunk directly (unwrapped for compatibility)
+			if chunk, ok := event.Data.(*models.CompletionChunk); ok {
+				chunkJSON, err := json.Marshal(chunk)
+				if err != nil {
+					continue
+				}
+				if _, err := w.Write([]byte("data: " + string(chunkJSON) + "\n\n")); err != nil {
+					return
+				}
+			}
+
+		case "done":
+			// Send OpenAI-compatible done marker
+			if _, err := w.Write([]byte("data: [DONE]\n\n")); err != nil {
+				return
+			}
+
+		case "error":
+			// Send error as SSE comment
+			if _, err := w.Write([]byte(": error occurred\n\n")); err != nil {
+				return
+			}
+			return
 		}
 
 		// Flush immediately

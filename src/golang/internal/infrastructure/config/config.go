@@ -98,8 +98,20 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
+	// Debug: print providers right after YAML parse
+	fmt.Printf("DEBUG after YAML parse: %d providers\n", len(cfg.Providers))
+	for name, prov := range cfg.Providers {
+		fmt.Printf("DEBUG after parse: %s enabled=%v\n", name, prov.Enabled)
+	}
+
 	// Set defaults
 	cfg.setDefaults()
+
+	// Debug: print providers after setDefaults
+	fmt.Printf("DEBUG after setDefaults: %d providers\n", len(cfg.Providers))
+	for name, prov := range cfg.Providers {
+		fmt.Printf("DEBUG after defaults: %s enabled=%v\n", name, prov.Enabled)
+	}
 
 	return &cfg, nil
 }

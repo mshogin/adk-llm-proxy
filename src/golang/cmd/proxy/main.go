@@ -35,6 +35,13 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Debug: print provider status
+	log.Printf("DEBUG: Loaded %d providers", len(cfg.Providers))
+	for name, provider := range cfg.Providers {
+		log.Printf("DEBUG: Provider %s: enabled=%v, api_key_len=%d, base_url=%s",
+			name, provider.Enabled, len(provider.APIKey), provider.BaseURL)
+	}
+
 	// Apply CLI overrides
 	if *host != "" {
 		cfg.Server.Host = *host
