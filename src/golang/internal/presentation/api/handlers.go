@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/mshogin/agents/internal/application/services"
@@ -72,9 +73,30 @@ func (h *Handler) streamResponse(w http.ResponseWriter, r *http.Request, req *mo
 	for event := range eventChan {
 		switch event.Type {
 		case "reasoning":
-			// Send reasoning as a comment (not visible to OpenAI clients)
-			if _, err := w.Write([]byte(": reasoning event\n\n")); err != nil {
-				return
+			// Send reasoning as visible content
+			if result, ok := event.Data.(*models.ReasoningResult); ok {
+				reasoningContent := h.formatReasoningResult(result)
+				reasoningChunk := &models.CompletionChunk{
+					ID:      "reasoning-chunk",
+					Object:  "chat.completion.chunk",
+					Created: 0,
+					Model:   req.Model,
+					Choices: []models.ChunkChoice{
+						{
+							Index: 0,
+							Delta: models.ChunkDelta{
+								Role:    "assistant",
+								Content: reasoningContent,
+							},
+						},
+					},
+				}
+				chunkJSON, err := json.Marshal(reasoningChunk)
+				if err == nil {
+					if _, err := w.Write([]byte("data: " + string(chunkJSON) + "\n\n")); err != nil {
+						return
+					}
+				}
 			}
 
 		case "completion":
@@ -192,4 +214,46 @@ func (h *Handler) buildCompletionResponse(req *models.CompletionRequest, content
 			},
 		},
 	}
+}
+
+// formatReasoningResult formats a ReasoningResult into a string wrapped in <reasoning> tags.
+func (h *Handler) formatReasoningResult(result *models.ReasoningResult) string {
+	var output string
+
+	output += "<reasoning>\n"
+	output += "Workflow: " + result.WorkflowName + "\n"
+
+	// Main message
+	if result.Message != "" {
+		output += "\n" + result.Message + "\n"
+	}
+
+	// Intent (for basic workflow)
+	if result.Intent != "" {
+		output += "\nIntent: " + result.Intent
+		if result.Confidence > 0 {
+			output += " (confidence: " + fmt.Sprintf("%.2f", result.Confidence) + ")"
+		}
+		output += "\n"
+	}
+
+	// Agent results (for advanced workflow)
+	if len(result.AgentResults) > 0 {
+		output += "\nAgent Results:\n"
+		for name, agentResult := range result.AgentResults {
+			if agentResult.Success {
+				output += "- " + name + ": " + agentResult.Output + "\n"
+			} else {
+				output += "- " + name + ": ERROR - " + agentResult.Error + "\n"
+			}
+		}
+	}
+
+	// Duration
+	if result.Duration > 0 {
+		output += "\nDuration: " + fmt.Sprintf("%dms", result.Duration) + "\n"
+	}
+
+	output += "</reasoning>\n\n"
+	return output
 }

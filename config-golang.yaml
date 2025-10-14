@@ -3,7 +3,7 @@
 
 server:
   host: "0.0.0.0"
-  port: 8001
+  port: 8000
 
 # LLM Provider Configuration
 providers:
@@ -35,7 +35,7 @@ providers:
 
 # Workflow Configuration
 workflows:
-  default: "basic"  # Options: default, basic, advanced
+  default: "advanced"  # Options: default, basic, advanced
   enabled:
     - "default"     # Simple hello world
     - "basic"       # Intent detection via regex/keywords

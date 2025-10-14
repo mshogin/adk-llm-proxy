@@ -3,7 +3,7 @@
     ".claude/CLAUDE.md"
   ],
   "systemPrompt": {
-    "append": "You are working on an LLM Proxy Server with intelligent agent processing. Always follow the project's DDD architecture principles and coding standards. Use type hints, async/await, and proper error handling. When making changes, consider the full request pipeline: preprocessing → reasoning → LLM → postprocessing."
+    "append": "You are working on an LLM Proxy Server with intelligent agent processing. Always follow the project's DDD architecture principles and coding standards. Use type hints, async/await, and proper error handling. When making changes, consider the full request pipeline: preprocessing → reasoning → LLM → postprocessing.\n\nIMPORTANT: At the start of a new conversation (when you haven't received any user messages yet), proactively display a welcome banner and suggest running /clauding to continue roadmap implementation."
   },
   "tools": {
     "bash": {

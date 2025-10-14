@@ -38,20 +38,10 @@ func (a *ADKAgent) Execute(ctx context.Context, input *models.ReasoningInput) (*
 	ctx, cancel := context.WithTimeout(ctx, a.timeout)
 	defer cancel()
 
-	// Prepare input JSON
-	inputJSON, err := json.Marshal(input)
-	if err != nil {
-		return &models.AgentResult{
-			AgentName: "adk_agent",
-			Success:   false,
-			Error:     fmt.Sprintf("failed to marshal input: %v", err),
-			Duration:  time.Since(start).Milliseconds(),
-		}, nil
-	}
-
 	// Execute Python script
+	// TODO: Pass input via stdin or command-line args for full ADK integration
 	cmd := exec.CommandContext(ctx, a.pythonPath, a.agentPath)
-	cmd.Stdin = nil // We'll pass input via args or stdin in a real implementation
+	cmd.Stdin = nil
 
 	output, err := cmd.CombinedOutput()
 	duration := time.Since(start).Milliseconds()
@@ -65,15 +55,32 @@ func (a *ADKAgent) Execute(ctx context.Context, input *models.ReasoningInput) (*
 		}, nil
 	}
 
-	// For now, return a simple result
-	// In a real implementation, you would parse the JSON output from the Python script
+	// Parse JSON output from Python script
+	var pythonResult map[string]interface{}
+	if err := json.Unmarshal(output, &pythonResult); err != nil {
+		// If JSON parsing fails, return raw output
+		return &models.AgentResult{
+			AgentName: "adk_agent",
+			Output:    string(output),
+			Success:   true,
+			Duration:  duration,
+		}, nil
+	}
+
+	// Extract message from Python output
+	message := "ADK agent analysis completed"
+	if msg, ok := pythonResult["message"].(string); ok {
+		message = msg
+	}
+	if reasoning, ok := pythonResult["reasoning"].(string); ok {
+		message += ": " + reasoning
+	}
+
 	return &models.AgentResult{
 		AgentName: "adk_agent",
-		Output:    fmt.Sprintf("ADK Agent processed: %s (placeholder)", input.GetUserMessage()),
+		Output:    message,
 		Success:   true,
 		Duration:  duration,
-		Metadata: map[string]interface{}{
-			"input_json": string(inputJSON),
-		},
+		Metadata:  pythonResult,
 	}, nil
 }
