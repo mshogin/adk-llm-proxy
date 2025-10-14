@@ -162,18 +162,18 @@ check-config: ## Validate configuration files
 
 go-build: ## Build Golang proxy binary
 	@echo "$(BLUE)🔨 Building Golang proxy...$(RESET)"
-	@go build -o bin/proxy ./src/golang/cmd/proxy
+	@cd src/golang && go build -o ../../bin/proxy ./cmd/proxy
 	@echo "$(GREEN)✅ Build complete: bin/proxy$(RESET)"
 
 go-test: ## Run Golang tests
 	@echo "$(BLUE)🧪 Running Golang tests...$(RESET)"
-	@go test ./src/golang/... -v -cover
+	@cd src/golang && go test ./... -v -cover
 	@echo "$(GREEN)✅ Tests complete$(RESET)"
 
 go-test-coverage: ## Run Golang tests with coverage report
 	@echo "$(BLUE)📊 Running Golang tests with coverage...$(RESET)"
-	@go test ./src/golang/... -coverprofile=coverage.out
-	@go tool cover -html=coverage.out -o coverage.html
+	@cd src/golang && go test ./... -coverprofile=../../coverage.out
+	@cd src/golang && go tool cover -html=../../coverage.out -o ../../coverage.html
 	@echo "$(GREEN)✅ Coverage report generated: coverage.html$(RESET)"
 
 go-run: go-build ## Run Golang proxy
@@ -183,17 +183,17 @@ go-run: go-build ## Run Golang proxy
 go-clean: ## Clean Golang build artifacts
 	@echo "$(RED)🧹 Cleaning Golang build artifacts...$(RESET)"
 	@rm -f bin/proxy coverage.out coverage.html
-	@go clean
+	@cd src/golang && go clean
 	@echo "$(GREEN)✅ Cleanup complete$(RESET)"
 
 go-lint: ## Run Golang linters
 	@echo "$(BLUE)🔍 Running Golang linters...$(RESET)"
 	@gofmt -l src/golang/ | grep . && echo "$(RED)❌ Code needs formatting$(RESET)" && exit 1 || echo "$(GREEN)✅ Code is formatted$(RESET)"
-	@go vet ./src/golang/...
+	@cd src/golang && go vet ./...
 	@echo "$(GREEN)✅ Lint checks passed$(RESET)"
 
 go-deps: ## Download Golang dependencies
 	@echo "$(BLUE)📦 Downloading Golang dependencies...$(RESET)"
-	@go mod download
-	@go mod tidy
+	@cd src/golang && go mod download
+	@cd src/golang && go mod tidy
 	@echo "$(GREEN)✅ Dependencies updated$(RESET)"
