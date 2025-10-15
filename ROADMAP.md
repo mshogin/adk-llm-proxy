@@ -853,7 +853,7 @@ tests/golang/internal/application/services/
 - [x] Output: `reasoning.hypotheses[]`, dependency map, expected artifacts
 - [x] Add cycle detection in dependency graph
 - [x] Create unit tests for structure generation
-- [ ] Document reasoning structure format
+- [x] Document reasoning structure format
 
 **10.4.3 Information Retrieval Planner**
 - [ ] Create RetrievalPlannerAgent in `src/golang/internal/domain/services/agents/retrieval_planner.go`
