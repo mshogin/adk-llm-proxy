@@ -753,7 +753,7 @@ tests/golang/internal/application/services/
 - [x] Implement token usage tracking and limits
 - [x] Add decision logging (why model X was selected) to `llm.decisions`
 - [ ] Create security filters (PII masking, sensitive field truncation)
-- [ ] Add unit tests for model selection logic
+- [x] Add unit tests for model selection logic
 - [ ] Add integration tests with real providers
 - [ ] Document model profiles and selection policies
 
