@@ -856,13 +856,13 @@ tests/golang/internal/application/services/
 - [x] Document reasoning structure format
 
 **10.4.3 Information Retrieval Planner**
-- [ ] Create RetrievalPlannerAgent in `src/golang/internal/domain/services/agents/retrieval_planner.go`
-- [ ] Generate retrieval plans for RAG and analytics sources
-- [ ] Prioritize structured data sources (GitLab, YouTrack) over unstructured
-- [ ] Create normalized queries with filters (project, date, status, provider)
-- [ ] Output: `retrieval.plans[]`, `retrieval.queries[]`
-- [ ] Add time and volume constraints per source
-- [ ] Create unit tests for plan generation
+- [x] Create RetrievalPlannerAgent in `src/golang/internal/domain/services/agents/retrieval_planner.go`
+- [x] Generate retrieval plans for RAG and analytics sources
+- [x] Prioritize structured data sources (GitLab, YouTrack) over unstructured
+- [x] Create normalized queries with filters (project, date, status, provider)
+- [x] Output: `retrieval.plans[]`, `retrieval.queries[]`
+- [x] Add time and volume constraints per source
+- [x] Create unit tests for plan generation
 - [ ] Document query format and source types
 
 **10.4.4 Context Synthesizer Agent**
