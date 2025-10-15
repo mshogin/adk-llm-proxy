@@ -749,7 +749,7 @@ tests/golang/internal/application/services/
 - [x] Implement cost calculation per request and aggregation per session/agent
 - [x] Add response caching with TTL (same input + params = cached response)
 - [x] Implement fallback chain (local → mini cloud → large cloud)
-- [ ] Add throttling and timeout controls per provider
+- [x] Add throttling and timeout controls per provider
 - [x] Implement token usage tracking and limits
 - [x] Add decision logging (why model X was selected) to `llm.decisions`
 - [ ] Create security filters (PII masking, sensitive field truncation)

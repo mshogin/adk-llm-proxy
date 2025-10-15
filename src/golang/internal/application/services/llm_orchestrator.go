@@ -30,6 +30,9 @@ type LLMOrchestrator struct {
 	cacheConfig   models.CacheConfig
 	cacheMu       sync.RWMutex
 
+	// Rate limiting and throttling
+	throttler *LLMThrottler
+
 	// Metrics and logging
 	decisions []models.LLMDecision
 	mu        sync.RWMutex
@@ -90,6 +93,7 @@ func NewLLMOrchestrator() *LLMOrchestrator {
 		agentBudgetUsed:   make(map[string]float64),
 		cache:             make(map[string]*CachedResponse),
 		cacheConfig:       models.DefaultCacheConfig(),
+		throttler:         NewLLMThrottler(profiles),
 		decisions:         []models.LLMDecision{},
 	}
 }
@@ -427,4 +431,25 @@ func (o *LLMOrchestrator) Serialize() ([]byte, error) {
 	}
 
 	return json.Marshal(state)
+}
+
+// WaitForThrottle waits for rate limit permission to make a request.
+// Returns error if rate limit is reached or context is cancelled.
+func (o *LLMOrchestrator) WaitForThrottle(ctx context.Context, provider, model string) error {
+	return o.throttler.WaitForToken(ctx, provider, model)
+}
+
+// GetRequestTimeout returns the configured timeout for a provider/model.
+func (o *LLMOrchestrator) GetRequestTimeout(provider, model string) time.Duration {
+	return o.throttler.GetTimeout(provider, model)
+}
+
+// GetThrottleStats returns current throttling statistics.
+func (o *LLMOrchestrator) GetThrottleStats() map[string]ThrottleStats {
+	return o.throttler.GetStats()
+}
+
+// UpdateProviderThrottle updates throttling settings for a specific provider/model.
+func (o *LLMOrchestrator) UpdateProviderThrottle(provider, model string, maxRPS int, timeoutMS int) {
+	o.throttler.UpdateRateLimit(provider, model, maxRPS, timeoutMS)
 }

@@ -32,6 +32,10 @@ type ModelProfile struct {
 	// Availability
 	IsLocal     bool `json:"is_local"`      // True for Ollama models
 	RequiresAuth bool `json:"requires_auth"` // True if API key required
+
+	// Rate limiting and throttling
+	MaxRequestsPerSecond int `json:"max_requests_per_second"` // 0 = unlimited
+	RequestTimeoutMS     int `json:"request_timeout_ms"`      // Request timeout in milliseconds
 }
 
 // TaskComplexity defines the complexity level of a reasoning task.
@@ -122,42 +126,48 @@ func DefaultModelProfiles() []ModelProfile {
 	return []ModelProfile{
 		// Ollama local models (free, fast, low quality)
 		{
-			Provider:        "ollama",
-			Model:           "mistral",
-			Quality:         "basic",
-			Speed:           "fast",
-			CostPer1KTokens: 0.0,
-			ContextLimit:    8192,
-			SupportsStreaming: true,
-			AverageLatencyMS: 100,
-			IsLocal:          true,
-			RequiresAuth:     false,
+			Provider:             "ollama",
+			Model:                "mistral",
+			Quality:              "basic",
+			Speed:                "fast",
+			CostPer1KTokens:      0.0,
+			ContextLimit:         8192,
+			SupportsStreaming:    true,
+			AverageLatencyMS:     100,
+			IsLocal:              true,
+			RequiresAuth:         false,
+			MaxRequestsPerSecond: 50,    // Generous for local
+			RequestTimeoutMS:     10000, // 10s
 		},
 		{
-			Provider:        "ollama",
-			Model:           "llama3",
-			Quality:         "basic",
-			Speed:           "fast",
-			CostPer1KTokens: 0.0,
-			ContextLimit:    8192,
-			SupportsStreaming: true,
-			AverageLatencyMS: 120,
-			IsLocal:          true,
-			RequiresAuth:     false,
+			Provider:             "ollama",
+			Model:                "llama3",
+			Quality:              "basic",
+			Speed:                "fast",
+			CostPer1KTokens:      0.0,
+			ContextLimit:         8192,
+			SupportsStreaming:    true,
+			AverageLatencyMS:     120,
+			IsLocal:              true,
+			RequiresAuth:         false,
+			MaxRequestsPerSecond: 50,    // Generous for local
+			RequestTimeoutMS:     10000, // 10s
 		},
 
 		// DeepSeek models (very cheap, good quality)
 		{
-			Provider:        "deepseek",
-			Model:           "deepseek-chat",
-			Quality:         "standard",
-			Speed:           "fast",
-			CostPer1KTokens: 0.0001,
-			ContextLimit:    32768,
-			SupportsStreaming: true,
-			AverageLatencyMS: 500,
-			IsLocal:          false,
-			RequiresAuth:     true,
+			Provider:             "deepseek",
+			Model:                "deepseek-chat",
+			Quality:              "standard",
+			Speed:                "fast",
+			CostPer1KTokens:      0.0001,
+			ContextLimit:         32768,
+			SupportsStreaming:    true,
+			AverageLatencyMS:     500,
+			IsLocal:              false,
+			RequiresAuth:         true,
+			MaxRequestsPerSecond: 20,    // Conservative for cloud
+			RequestTimeoutMS:     15000, // 15s
 		},
 		{
 			Provider:               "deepseek",
@@ -171,36 +181,42 @@ func DefaultModelProfiles() []ModelProfile {
 			AverageLatencyMS:       1500,
 			IsLocal:                false,
 			RequiresAuth:           true,
+			MaxRequestsPerSecond:   10,    // More conservative for reasoning models
+			RequestTimeoutMS:       30000, // 30s for complex reasoning
 		},
 
 		// OpenAI models
 		{
-			Provider:         "openai",
-			Model:            "gpt-4o-mini",
-			Quality:          "standard",
-			Speed:            "fast",
-			CostPer1KTokens:  0.00015,
-			ContextLimit:     128000,
-			SupportsStreaming: true,
-			SupportsFunctions: true,
-			SupportsVision:    true,
-			AverageLatencyMS:  400,
-			IsLocal:           false,
-			RequiresAuth:      true,
+			Provider:             "openai",
+			Model:                "gpt-4o-mini",
+			Quality:              "standard",
+			Speed:                "fast",
+			CostPer1KTokens:      0.00015,
+			ContextLimit:         128000,
+			SupportsStreaming:    true,
+			SupportsFunctions:    true,
+			SupportsVision:       true,
+			AverageLatencyMS:     400,
+			IsLocal:              false,
+			RequiresAuth:         true,
+			MaxRequestsPerSecond: 50,    // High for mini model
+			RequestTimeoutMS:     15000, // 15s
 		},
 		{
-			Provider:         "openai",
-			Model:            "gpt-4o",
-			Quality:          "premium",
-			Speed:            "medium",
-			CostPer1KTokens:  0.0025,
-			ContextLimit:     128000,
-			SupportsStreaming: true,
-			SupportsFunctions: true,
-			SupportsVision:    true,
-			AverageLatencyMS:  800,
-			IsLocal:           false,
-			RequiresAuth:      true,
+			Provider:             "openai",
+			Model:                "gpt-4o",
+			Quality:              "premium",
+			Speed:                "medium",
+			CostPer1KTokens:      0.0025,
+			ContextLimit:         128000,
+			SupportsStreaming:    true,
+			SupportsFunctions:    true,
+			SupportsVision:       true,
+			AverageLatencyMS:     800,
+			IsLocal:              false,
+			RequiresAuth:         true,
+			MaxRequestsPerSecond: 20,    // Standard for GPT-4o
+			RequestTimeoutMS:     20000, // 20s
 		},
 		{
 			Provider:               "openai",
@@ -213,6 +229,8 @@ func DefaultModelProfiles() []ModelProfile {
 			AverageLatencyMS:       3000,
 			IsLocal:                false,
 			RequiresAuth:           true,
+			MaxRequestsPerSecond:   10,    // Lower for reasoning models
+			RequestTimeoutMS:       60000, // 60s for reasoning
 		},
 		{
 			Provider:               "openai",
@@ -225,44 +243,52 @@ func DefaultModelProfiles() []ModelProfile {
 			AverageLatencyMS:       5000,
 			IsLocal:                false,
 			RequiresAuth:           true,
+			MaxRequestsPerSecond:   5,      // Very conservative for top model
+			RequestTimeoutMS:       120000, // 120s for complex reasoning
 		},
 
 		// Anthropic models
 		{
-			Provider:         "anthropic",
-			Model:            "claude-3-haiku",
-			Quality:          "standard",
-			Speed:            "fast",
-			CostPer1KTokens:  0.00025,
-			ContextLimit:     200000,
-			SupportsStreaming: true,
-			AverageLatencyMS:  500,
-			IsLocal:           false,
-			RequiresAuth:      true,
+			Provider:             "anthropic",
+			Model:                "claude-3-haiku",
+			Quality:              "standard",
+			Speed:                "fast",
+			CostPer1KTokens:      0.00025,
+			ContextLimit:         200000,
+			SupportsStreaming:    true,
+			AverageLatencyMS:     500,
+			IsLocal:              false,
+			RequiresAuth:         true,
+			MaxRequestsPerSecond: 50,    // High for haiku
+			RequestTimeoutMS:     15000, // 15s
 		},
 		{
-			Provider:         "anthropic",
-			Model:            "claude-3-5-sonnet",
-			Quality:          "premium",
-			Speed:            "medium",
-			CostPer1KTokens:  0.003,
-			ContextLimit:     200000,
-			SupportsStreaming: true,
-			AverageLatencyMS:  1000,
-			IsLocal:           false,
-			RequiresAuth:      true,
+			Provider:             "anthropic",
+			Model:                "claude-3-5-sonnet",
+			Quality:              "premium",
+			Speed:                "medium",
+			CostPer1KTokens:      0.003,
+			ContextLimit:         200000,
+			SupportsStreaming:    true,
+			AverageLatencyMS:     1000,
+			IsLocal:              false,
+			RequiresAuth:         true,
+			MaxRequestsPerSecond: 20,    // Standard for sonnet
+			RequestTimeoutMS:     20000, // 20s
 		},
 		{
-			Provider:         "anthropic",
-			Model:            "claude-3-opus",
-			Quality:          "advanced",
-			Speed:            "slow",
-			CostPer1KTokens:  0.015,
-			ContextLimit:     200000,
-			SupportsStreaming: true,
-			AverageLatencyMS:  2000,
-			IsLocal:           false,
-			RequiresAuth:      true,
+			Provider:             "anthropic",
+			Model:                "claude-3-opus",
+			Quality:              "advanced",
+			Speed:                "slow",
+			CostPer1KTokens:      0.015,
+			ContextLimit:         200000,
+			SupportsStreaming:    true,
+			AverageLatencyMS:     2000,
+			IsLocal:              false,
+			RequiresAuth:         true,
+			MaxRequestsPerSecond: 10,    // Conservative for opus
+			RequestTimeoutMS:     30000, // 30s
 		},
 	}
 }
