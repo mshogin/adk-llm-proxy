@@ -1,0 +1,25 @@
+now i want to add RAG subsytem. create technical specification for it.
+
+## Introduce RAG and GraphRAG sub-system
+I want you to introduce the RAG component.
+i want it be able to create a vector database from the givven path
+using https://github.com/chonkie-inc/chonkie.
+I want to use local vector database and local graph database.
+during the indexation(making the vectors) i want the command which index the documents
+also setup the connections between vectors, documents and other entities which be introduced.
+before making chunks I want the command clean the text from the rudiments by using the cheap LLM.
+each vector should contain the mera information:
+ - for tickets it's attributes (like number, creator, assigner, component etc
+ - for source code see <INDEXING_SOURCE_CODE> for details
+
+<INDEXING_SOURCE_CODE>
+when indexing the source code it should follow the algorithm
+- use ask to parse the code
+- for each item send it to llm and ask to explain what it does and what it is in 2-3 sentences
+- use that text for making vectors
+- dependecies should be in the vector metadata and in graphDB
+- in metadata should be path to the file
+</INDEXING_SOURCE_CODE>
+
+then I want to use the vector search for context building during the reasoning step.
+it's also OK if some agents want to build separate context with RAG and GraphRAG for its work - that means that RAG should be use for building main context and each agent could use RAG for building own context which needs to be send to llm

@@ -1,0 +1,63 @@
+# Pipeline Configuration Example
+# Defines how reasoning agents are orchestrated
+
+pipeline:
+  # Execution mode: sequential, parallel, or conditional
+  mode: sequential
+
+  # List of agents in the pipeline
+  agents:
+    # Intent Detection - First agent in pipeline
+    - id: intent_detection
+      enabled: true
+      timeout: 5s
+      retry: 2
+
+    # Reasoning Structure - Depends on intent detection
+    - id: reasoning_structure
+      enabled: true
+      depends_on:
+        - intent_detection
+      timeout: 10s
+      retry: 2
+
+    # Retrieval Planner - Plans information retrieval
+    - id: retrieval_planner
+      enabled: true
+      depends_on:
+        - reasoning_structure
+      timeout: 5s
+      retry: 2
+
+    # Context Synthesizer - Merges and normalizes facts
+    - id: context_synthesizer
+      enabled: true
+      depends_on:
+        - retrieval_planner
+      timeout: 15s
+      retry: 2
+
+    # Inference - Makes conclusions
+    - id: inference
+      enabled: true
+      depends_on:
+        - context_synthesizer
+        - reasoning_structure
+      timeout: 20s
+      retry: 1
+
+    # Validation - Validates reasoning chain
+    - id: validation
+      enabled: true
+      depends_on:
+        - inference
+      timeout: 5s
+      retry: 1
+
+    # Summarization - Generates final summary
+    - id: summarization
+      enabled: true
+      depends_on:
+        - validation
+      timeout: 10s
+      retry: 1
