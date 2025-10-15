@@ -846,13 +846,13 @@ tests/golang/internal/application/services/
 - [x] Document supported intent types and confidence thresholds
 
 **10.4.2 Reasoning Structure Agent**
-- [ ] Create ReasoningStructureAgent in `src/golang/internal/domain/services/agents/reasoning_structure.go`
-- [ ] Build reasoning goal hierarchy from detected intents
-- [ ] Generate hypotheses and assumptions
-- [ ] Create dependency graph between reasoning steps
-- [ ] Output: `reasoning.hypotheses[]`, dependency map, expected artifacts
-- [ ] Add cycle detection in dependency graph
-- [ ] Create unit tests for structure generation
+- [x] Create ReasoningStructureAgent in `src/golang/internal/domain/services/agents/reasoning_structure.go`
+- [x] Build reasoning goal hierarchy from detected intents
+- [x] Generate hypotheses and assumptions
+- [x] Create dependency graph between reasoning steps
+- [x] Output: `reasoning.hypotheses[]`, dependency map, expected artifacts
+- [x] Add cycle detection in dependency graph
+- [x] Create unit tests for structure generation
 - [ ] Document reasoning structure format
 
 **10.4.3 Information Retrieval Planner**
