@@ -694,7 +694,7 @@ tests/golang/internal/domain/models/
 - [x] Create pipeline configuration loader (YAML/JSON)
 - [x] Add unit tests for orchestration modes
 - [x] Add integration tests for full pipeline execution
-- [ ] Document pipeline configuration format
+- [x] Document pipeline configuration format
 
 **Implementation notes:**
 - Agent interface contract:
