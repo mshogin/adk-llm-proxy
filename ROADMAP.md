@@ -693,7 +693,7 @@ tests/golang/internal/domain/models/
 - [x] Add graceful degradation on agent failures
 - [x] Create pipeline configuration loader (YAML/JSON)
 - [x] Add unit tests for orchestration modes
-- [ ] Add integration tests for full pipeline execution
+- [x] Add integration tests for full pipeline execution
 - [ ] Document pipeline configuration format
 
 **Implementation notes:**
