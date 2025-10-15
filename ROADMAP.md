@@ -755,7 +755,7 @@ tests/golang/internal/application/services/
 - [x] Create security filters (PII masking, sensitive field truncation)
 - [x] Add unit tests for model selection logic
 - [ ] Add integration tests with real providers
-- [ ] Document model profiles and selection policies
+- [x] Document model profiles and selection policies
 
 **Implementation notes:**
 - Model selection strategy based on task complexity, context size, and budget:
