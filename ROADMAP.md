@@ -692,7 +692,7 @@ tests/golang/internal/domain/models/
 - [x] Implement retry policy with configurable limits per agent
 - [x] Add graceful degradation on agent failures
 - [x] Create pipeline configuration loader (YAML/JSON)
-- [ ] Add unit tests for orchestration modes
+- [x] Add unit tests for orchestration modes
 - [ ] Add integration tests for full pipeline execution
 - [ ] Document pipeline configuration format
 
