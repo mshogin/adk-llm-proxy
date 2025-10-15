@@ -742,16 +742,16 @@ tests/golang/internal/application/services/
 
 **Goal**: Implement dynamic LLM selection with cost tracking, caching, and fallback chains
 
-- [ ] Create LLMOrchestrator in `src/golang/internal/application/services/llm_orchestrator.go`
-- [ ] Define model profile schema (provider, quality, speed, cost, context_limit)
-- [ ] Implement provider registry (local Ollama, OpenAI, Anthropic, DeepSeek)
-- [ ] Add model selection strategy based on task complexity and budget
-- [ ] Implement cost calculation per request and aggregation per session/agent
-- [ ] Add response caching with TTL (same input + params = cached response)
-- [ ] Implement fallback chain (local → mini cloud → large cloud)
+- [x] Create LLMOrchestrator in `src/golang/internal/application/services/llm_orchestrator.go`
+- [x] Define model profile schema (provider, quality, speed, cost, context_limit)
+- [x] Implement provider registry (local Ollama, OpenAI, Anthropic, DeepSeek)
+- [x] Add model selection strategy based on task complexity and budget
+- [x] Implement cost calculation per request and aggregation per session/agent
+- [x] Add response caching with TTL (same input + params = cached response)
+- [x] Implement fallback chain (local → mini cloud → large cloud)
 - [ ] Add throttling and timeout controls per provider
-- [ ] Implement token usage tracking and limits
-- [ ] Add decision logging (why model X was selected) to `llm.decisions`
+- [x] Implement token usage tracking and limits
+- [x] Add decision logging (why model X was selected) to `llm.decisions`
 - [ ] Create security filters (PII masking, sensitive field truncation)
 - [ ] Add unit tests for model selection logic
 - [ ] Add integration tests with real providers
