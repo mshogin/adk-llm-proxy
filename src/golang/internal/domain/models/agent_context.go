@@ -42,6 +42,10 @@ type ReasoningContext struct {
 	Conclusions   []Conclusion `json:"conclusions,omitempty"`
 	DependencyMap interface{}  `json:"dependency_map,omitempty"`
 
+	// Inference outputs
+	InferenceChain []InferenceStep `json:"inference_chain,omitempty"`
+	Alternatives   []Alternative   `json:"alternatives,omitempty"`
+
 	// Confidence scores
 	ConfidenceScores map[string]float64 `json:"confidence_scores,omitempty"`
 
@@ -65,10 +69,28 @@ type Hypothesis struct {
 
 // Conclusion represents a reasoning conclusion.
 type Conclusion struct {
-	ID         string  `json:"id"`
-	Content    string  `json:"content"`
-	Confidence float64 `json:"confidence"`
-	BasedOn    []string `json:"based_on,omitempty"`
+	ID          string   `json:"id"`
+	Description string   `json:"description"`
+	Confidence  float64  `json:"confidence"`
+	Evidence    []string `json:"evidence,omitempty"`
+	Intent      string   `json:"intent,omitempty"`
+}
+
+// InferenceStep represents a step in the inference chain.
+type InferenceStep struct {
+	ID          string   `json:"id"`
+	Description string   `json:"description"`
+	Hypothesis  string   `json:"hypothesis"`
+	Evidence    []string `json:"evidence,omitempty"`
+	Confidence  float64  `json:"confidence"`
+}
+
+// Alternative represents an alternative interpretation.
+type Alternative struct {
+	ID          string  `json:"id"`
+	Conclusion  string  `json:"conclusion"`
+	Description string  `json:"description"`
+	Confidence  float64 `json:"confidence"`
 }
 
 // EnrichmentContext stores facts and derived knowledge.
