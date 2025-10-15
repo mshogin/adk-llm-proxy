@@ -863,7 +863,7 @@ tests/golang/internal/application/services/
 - [x] Output: `retrieval.plans[]`, `retrieval.queries[]`
 - [x] Add time and volume constraints per source
 - [x] Create unit tests for plan generation
-- [ ] Document query format and source types
+- [x] Document query format and source types
 
 **10.4.4 Context Synthesizer Agent**
 - [ ] Create ContextSynthesizerAgent in `src/golang/internal/domain/services/agents/context_synthesizer.go`
