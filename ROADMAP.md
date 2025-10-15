@@ -866,14 +866,14 @@ tests/golang/internal/application/services/
 - [x] Document query format and source types
 
 **10.4.4 Context Synthesizer Agent**
-- [ ] Create ContextSynthesizerAgent in `src/golang/internal/domain/services/agents/context_synthesizer.go`
-- [ ] Normalize and merge facts from multiple sources
-- [ ] Implement deduplication logic
-- [ ] Unify schemas across different data sources
-- [ ] Track fact provenance (source, timestamp, confidence)
-- [ ] Output: `enrichment.facts[]`, `enrichment.derived_knowledge[]`, relationships
-- [ ] Create unit tests for normalization and deduplication
-- [ ] Document fact schema and relationship types
+- [x] Create ContextSynthesizerAgent in `src/golang/internal/domain/services/agents/context_synthesizer.go`
+- [x] Normalize and merge facts from multiple sources
+- [x] Implement deduplication logic
+- [x] Unify schemas across different data sources
+- [x] Track fact provenance (source, timestamp, confidence)
+- [x] Output: `enrichment.facts[]`, `enrichment.derived_knowledge[]`, relationships
+- [x] Create unit tests for normalization and deduplication
+- [x] Document fact schema and relationship types
 
 **10.4.5 Inference Agent**
 - [ ] Create InferenceAgent in `src/golang/internal/domain/services/agents/inference.go`
