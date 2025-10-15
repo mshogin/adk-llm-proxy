@@ -835,14 +835,14 @@ tests/golang/internal/application/services/
 **Goal**: Implement 7 specialized reasoning agents following single-responsibility principle
 
 **10.4.1 Intent Detection Agent**
-- [ ] Create IntentDetectionAgent in `src/golang/internal/domain/services/agents/intent_detection.go`
-- [ ] Implement rule-based intent classification (regex, keywords)
+- [x] Create IntentDetectionAgent in `src/golang/internal/domain/services/agents/intent_detection.go`
+- [x] Implement rule-based intent classification (regex, keywords)
 - [ ] Add lightweight local model for intent detection (Ollama)
 - [ ] Fallback to cloud LLM for low-confidence cases (< 0.8)
-- [ ] Extract entities: projects, dates, providers, statuses
-- [ ] Output: `reasoning.intents[]`, `reasoning.entities{}`, confidence scores
+- [x] Extract entities: projects, dates, providers, statuses
+- [x] Output: `reasoning.intents[]`, `reasoning.entities{}`, confidence scores
 - [ ] Add clarification questions for ambiguous intents
-- [ ] Create unit tests with various input patterns
+- [x] Create unit tests with various input patterns
 - [ ] Document supported intent types and confidence thresholds
 
 **10.4.2 Reasoning Structure Agent**
