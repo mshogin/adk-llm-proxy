@@ -843,7 +843,7 @@ tests/golang/internal/application/services/
 - [x] Output: `reasoning.intents[]`, `reasoning.entities{}`, confidence scores
 - [ ] Add clarification questions for ambiguous intents
 - [x] Create unit tests with various input patterns
-- [ ] Document supported intent types and confidence thresholds
+- [x] Document supported intent types and confidence thresholds
 
 **10.4.2 Reasoning Structure Agent**
 - [ ] Create ReasoningStructureAgent in `src/golang/internal/domain/services/agents/reasoning_structure.go`
