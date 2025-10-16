@@ -1004,7 +1004,7 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Add troubleshooting guide for common issues
 - [x] Create example pipeline configurations
 - [x] Document performance targets and SLA criteria
-- [ ] Add architecture diagrams (agent flow, context structure, LLM selection)
+- [x] Add architecture diagrams (agent flow, context structure, LLM selection)
 
 **Implementation notes:**
 - Coverage targets: 80%+ per module, 60%+ integration
