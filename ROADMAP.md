@@ -946,7 +946,7 @@ tests/golang/internal/domain/services/agents/
 - [x] Add Prometheus metrics export
 - [ ] Create structured logging with ELK-compatible format
 - [ ] Implement performance profiling per agent
-- [ ] Add cost reporting per session and per agent
+- [x] Add cost reporting per session and per agent
 - [ ] Create real-time monitoring dashboard (optional)
 - [ ] Add alerting on budget overruns and SLA violations
 - [x] Create unit tests for metrics collection
