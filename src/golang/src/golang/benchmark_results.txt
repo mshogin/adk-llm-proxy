@@ -1,0 +1,19 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/mshogin/agents/internal/application/services
+cpu: Apple M4
+BenchmarkPipeline_Sequential_SingleAgent-10    	    1000	      1625 ns/op	    1536 B/op	      19 allocs/op
+BenchmarkPipeline_Sequential_ThreeAgents-10    	    1000	      3503 ns/op	    2944 B/op	      33 allocs/op
+BenchmarkPipeline_Sequential_SevenAgents-10    	    1000	       542.8 ns/op	     800 B/op	      10 allocs/op
+--- FAIL: BenchmarkRealAgents_IntentDetection
+    reasoning_manager_benchmark_test.go:271: agent intent_detection failed: no input text found in context
+--- FAIL: BenchmarkRealAgents_FullPipeline
+    reasoning_manager_benchmark_test.go:321: agent intent_detection failed: no input text found in context
+BenchmarkContextClone-10                       	    1000	     14888 ns/op	    3061 B/op	      49 allocs/op
+BenchmarkContextSerialization-10               	    1000	      1405 ns/op	     563 B/op	       2 allocs/op
+BenchmarkMetricsCollection/WithMetrics-10      	    1000	       974.3 ns/op	    1536 B/op	      19 allocs/op
+BenchmarkMetricsCollection/WithoutMetrics-10   	    1000	       856.7 ns/op	    1536 B/op	      19 allocs/op
+FAIL
+exit status 1
+FAIL	github.com/mshogin/agents/internal/application/services	0.400s
+FAIL

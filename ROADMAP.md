@@ -995,7 +995,7 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Add unit tests for all agents (80%+ coverage per agent)
 - [x] Add integration tests for full pipeline execution
 - [x] Create negative test cases (missing keys, invalid inputs, cycles)
-- [ ] Add performance benchmarks (latency, LLM call frequency, cost per session)
+- [x] Add performance benchmarks (latency, LLM call frequency, cost per session)
 - [ ] Implement reproducibility tests (same input → same output with fixed config)
 - [ ] Create validation rule tests (slot completeness, logical consistency)
 - [ ] Add cost budget enforcement tests

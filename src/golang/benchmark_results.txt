@@ -1,0 +1,86 @@
+--- FAIL: TestFullPipeline_Parallel_MultiPath (0.01s)
+    reasoning_manager_integration_test.go:209: 
+        	Error Trace:	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_integration_test.go:209
+        	Error:      	"[{2025-10-16 11:59:49.752363 +0200 CEST m=+5.619127126 inference success 0 [] } {2025-10-16 11:59:49.763451 +0200 CEST m=+5.630213459 context_analysis success 11 [] } {2025-10-16 11:59:49.763469 +0200 CEST m=+5.630231167 intent_detection success 11 [] }]" should have 4 item(s), but has 3
+        	Test:       	TestFullPipeline_Parallel_MultiPath
+    reasoning_manager_integration_test.go:219: 
+        	Error Trace:	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_integration_test.go:219
+        	Error:      	Should be true
+        	Test:       	TestFullPipeline_Parallel_MultiPath
+        	Messages:   	entity_extraction should execute
+fatal error: concurrent map writes
+
+goroutine 212 [running]:
+internal/runtime/maps.fatal({0x10279955a?, 0x1025ea7b8?})
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/runtime/panic.go:1046 +0x20
+github.com/mshogin/agents/internal/application/services.TestExecute_ParallelMode.func3({0x1400019cc48?, 0x102626b5c?}, 0x1400045c3c0)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:374 +0x50
+github.com/mshogin/agents/internal/application/services.(*MockAgent).Execute(0x1028795a8?, {0x1028798b8?, 0x14000446a10?}, 0x1025fd53c?)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:30 +0x44
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeAgent(0x1400042aa80, {0x1028795a8, 0x102a67340}, 0x1400045c3c0, {{0x10279311d, 0x6}, 0x1, {0x14000404bc0, 0x1, 0x1}, ...})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:237 +0x2cc
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel.func1({0x10279311d, 0x6}, {{0x10279311d, 0x6}, 0x1, {0x14000404bc0, 0x1, 0x1}, 0x1388, 0x0, ...})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:317 +0x9c
+created by github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel in goroutine 209
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:314 +0x270
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x14000003c00, {0x10279a5eb?, 0x14000147b38?}, 0x102874c28)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:2005 +0x378
+testing.runTests.func1(0x14000003c00)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:2477 +0x38
+testing.tRunner(0x14000003c00, 0x14000147c68)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:1934 +0xc8
+testing.runTests(0x1400000c150, {0x102a3b200, 0x5b, 0x5b}, {0x14000068520?, 0x7?, 0x102a40360?})
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:2475 +0x3b8
+testing.(*M).Run(0x14000100a00)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:2337 +0x530
+main.main()
+	_testmain.go:243 +0x80
+
+goroutine 209 [sync.WaitGroup.Wait]:
+sync.runtime_SemacquireWaitGroup(0x1025d6180?, 0x80?)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/runtime/sema.go:114 +0x38
+sync.(*WaitGroup).Wait(0x140004083b0)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/sync/waitgroup.go:206 +0xa8
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel(0x1400042aa80, {0x1028795a8, 0x102a67340}, 0x1400045c3c0, {0x1400041e040, 0x3, 0x1400007cda8?})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:326 +0x28c
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeParallel(0x1400042aa80, {0x1028795a8, 0x102a67340}, 0x1400045c3c0)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:159 +0xac
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).Execute(0x1400042aa80?, {0x1028795a8?, 0x102a67340?}, 0x10267bd9c?)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:109 +0x4c
+github.com/mshogin/agents/internal/application/services.TestExecute_ParallelMode(0x14000415c00)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:401 +0x4c4
+testing.tRunner(0x14000415c00, 0x102874c28)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:1934 +0xc8
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/testing/testing.go:1997 +0x364
+
+goroutine 211 [sleep]:
+time.Sleep(0x989680)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/runtime/time.go:363 +0x150
+github.com/mshogin/agents/internal/application/services.TestExecute_ParallelMode.func2({0x14000199c48?, 0x102626b5c?}, 0x1400045c3c0)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:361 +0x90
+github.com/mshogin/agents/internal/application/services.(*MockAgent).Execute(0x1028795a8?, {0x1028798b8?, 0x140001c0230?}, 0x1025fd53c?)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:30 +0x44
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeAgent(0x1400042aa80, {0x1028795a8, 0x102a67340}, 0x1400045c3c0, {{0x10279310b, 0x6}, 0x1, {0x102a67340, 0x0, 0x0}, ...})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:237 +0x2cc
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel.func1({0x10279310b, 0x6}, {{0x10279310b, 0x6}, 0x1, {0x102a67340, 0x0, 0x0}, 0x1388, 0x0, ...})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:317 +0x9c
+created by github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel in goroutine 209
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:314 +0x270
+
+goroutine 210 [sleep]:
+time.Sleep(0x989680)
+	/opt/homebrew/Cellar/go/1.25.1/libexec/src/runtime/time.go:363 +0x150
+github.com/mshogin/agents/internal/application/services.TestExecute_ParallelMode.func1({0x1400020ec48?, 0x102626b5c?}, 0x1400045c3c0)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:348 +0x90
+github.com/mshogin/agents/internal/application/services.(*MockAgent).Execute(0x1028795a8?, {0x1028798b8?, 0x14000481260?}, 0x1025fd53c?)
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager_test.go:30 +0x44
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeAgent(0x1400042aa80, {0x1028795a8, 0x102a67340}, 0x1400045c3c0, {{0x102793105, 0x6}, 0x1, {0x102a67340, 0x0, 0x0}, ...})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:237 +0x2cc
+github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel.func1({0x102793105, 0x6}, {{0x102793105, 0x6}, 0x1, {0x102a67340, 0x0, 0x0}, 0x1388, 0x0, ...})
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:317 +0x9c
+created by github.com/mshogin/agents/internal/application/services.(*ReasoningManager).executeLevel in goroutine 209
+	/Users/mshogin/my/agents/src/golang/internal/application/services/reasoning_manager.go:314 +0x270
+exit status 2
