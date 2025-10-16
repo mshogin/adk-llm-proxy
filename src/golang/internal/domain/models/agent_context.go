@@ -51,6 +51,9 @@ type ReasoningContext struct {
 
 	// Summary
 	Summary string `json:"summary,omitempty"`
+
+	// Summarization outputs
+	Artifacts []Artifact `json:"artifacts,omitempty"`
 }
 
 // Intent represents detected user intent.
