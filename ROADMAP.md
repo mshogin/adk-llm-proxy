@@ -938,9 +938,9 @@ tests/golang/internal/domain/services/agents/
 
 **Goal**: Comprehensive monitoring, tracing, and performance analysis
 
-- [ ] Create metrics collector in `src/golang/internal/infrastructure/metrics/collector.go`
-- [ ] Track per-agent metrics: duration, status, output size, LLM calls
-- [ ] Track LLM metrics: tokens, cost, cache hits, model selection decisions
+- [x] Create metrics collector in `src/golang/internal/infrastructure/metrics/collector.go`
+- [x] Track per-agent metrics: duration, status, output size, LLM calls
+- [x] Track LLM metrics: tokens, cost, cache hits, model selection decisions
 - [ ] Track context metrics: size, artifact count, diff size
 - [ ] Implement distributed tracing with trace_id
 - [ ] Add Prometheus metrics export
@@ -949,7 +949,7 @@ tests/golang/internal/domain/services/agents/
 - [ ] Add cost reporting per session and per agent
 - [ ] Create real-time monitoring dashboard (optional)
 - [ ] Add alerting on budget overruns and SLA violations
-- [ ] Create unit tests for metrics collection
+- [x] Create unit tests for metrics collection
 - [ ] Document metrics format and export endpoints
 
 **Implementation notes:**
