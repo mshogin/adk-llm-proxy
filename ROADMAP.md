@@ -754,7 +754,7 @@ tests/golang/internal/application/services/
 - [x] Add decision logging (why model X was selected) to `llm.decisions`
 - [x] Create security filters (PII masking, sensitive field truncation)
 - [x] Add unit tests for model selection logic
-- [ ] Add integration tests with real providers
+- [x] Add integration tests with real providers
 - [x] Document model profiles and selection policies
 
 **Implementation notes:**
