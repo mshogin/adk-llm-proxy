@@ -997,7 +997,7 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Create negative test cases (missing keys, invalid inputs, cycles)
 - [x] Add performance benchmarks (latency, LLM call frequency, cost per session)
 - [x] Implement reproducibility tests (same input → same output with fixed config)
-- [ ] Create validation rule tests (slot completeness, logical consistency)
+- [x] Create validation rule tests (slot completeness, logical consistency)
 - [ ] Add cost budget enforcement tests
 - [ ] Create documentation: AgentContext schema, agent contracts, pipeline config
 - [ ] Document LLM selection policies and model profiles
