@@ -133,10 +133,14 @@ func (a *IntentDetectionAgent) Execute(ctx context.Context, agentContext *models
 		}
 	}
 
+	// Generate clarification questions for ambiguous intents
+	clarificationQuestions := a.generateClarificationQuestions(intents, confidenceScores)
+
 	// Write results to context
 	newContext.Reasoning.Intents = intents
 	newContext.Reasoning.Entities = entities
 	newContext.Reasoning.ConfidenceScores = confidenceScores
+	newContext.Reasoning.ClarificationQuestions = clarificationQuestions
 
 	// Track agent execution in audit
 	duration := time.Since(startTime)
@@ -658,6 +662,125 @@ func (a *IntentDetectionAgent) callLLMForIntent(ctx context.Context, prompt stri
 			Confidence: 0.9,
 		},
 	}, 0.9, nil
+}
+
+// generateClarificationQuestions creates clarification questions for ambiguous intents.
+func (a *IntentDetectionAgent) generateClarificationQuestions(intents []models.Intent, confidenceScores map[string]float64) []models.ClarificationQuestion {
+	questions := []models.ClarificationQuestion{}
+
+	// Check for ambiguity conditions
+	if len(intents) == 0 {
+		return questions // No intents, no questions
+	}
+
+	primaryConfidence := confidenceScores["primary_intent"]
+
+	// Case 1: Very low confidence on primary intent (< 0.5)
+	if primaryConfidence < 0.5 {
+		question := models.ClarificationQuestion{
+			Question:        "I'm not quite sure what you're asking for. Could you provide more details?",
+			PossibleIntents: []string{intents[0].Type},
+			Reason:          fmt.Sprintf("Low confidence (%.2f) in primary intent detection", primaryConfidence),
+		}
+
+		if len(intents) > 1 {
+			question.PossibleIntents = append(question.PossibleIntents, intents[1].Type)
+			question.Options = []string{
+				a.getIntentDescription(intents[0].Type),
+				a.getIntentDescription(intents[1].Type),
+				"Something else",
+			}
+		}
+
+		questions = append(questions, question)
+		return questions
+	}
+
+	// Case 2: Multiple intents with similar confidence (difference < 0.2)
+	if len(intents) >= 2 {
+		confidenceDiff := intents[0].Confidence - intents[1].Confidence
+
+		if confidenceDiff < 0.2 {
+			intentTypes := []string{intents[0].Type, intents[1].Type}
+			options := []string{
+				a.getIntentDescription(intents[0].Type),
+				a.getIntentDescription(intents[1].Type),
+			}
+
+			// Add third option if available
+			if len(intents) >= 3 && (intents[1].Confidence-intents[2].Confidence) < 0.15 {
+				intentTypes = append(intentTypes, intents[2].Type)
+				options = append(options, a.getIntentDescription(intents[2].Type))
+			}
+
+			question := models.ClarificationQuestion{
+				Question:        a.buildClarificationQuestion(intentTypes),
+				Options:         options,
+				PossibleIntents: intentTypes,
+				Reason:          fmt.Sprintf("Multiple intents with similar confidence (diff: %.2f)", confidenceDiff),
+			}
+
+			questions = append(questions, question)
+		}
+	}
+
+	return questions
+}
+
+// getIntentDescription returns a human-readable description of an intent type.
+func (a *IntentDetectionAgent) getIntentDescription(intentType string) string {
+	descriptions := map[string]string{
+		"query_commits":   "You want to see recent code changes or commits",
+		"query_issues":    "You want to check on tasks, bugs, or issues",
+		"query_analytics": "You want to see statistics or metrics",
+		"query_status":    "You want to check the status or health of a project",
+		"command_action":  "You want to execute an action (deploy, restart, etc.)",
+		"request_help":    "You need help or documentation",
+		"conversation":    "General conversation",
+	}
+
+	if desc, ok := descriptions[intentType]; ok {
+		return desc
+	}
+
+	return intentType
+}
+
+// buildClarificationQuestion creates a question based on possible intents.
+func (a *IntentDetectionAgent) buildClarificationQuestion(intentTypes []string) string {
+	if len(intentTypes) == 2 {
+		return fmt.Sprintf("Are you asking about %s or %s?",
+			a.getIntentShortName(intentTypes[0]),
+			a.getIntentShortName(intentTypes[1]))
+	}
+
+	if len(intentTypes) == 3 {
+		return fmt.Sprintf("Are you asking about %s, %s, or %s?",
+			a.getIntentShortName(intentTypes[0]),
+			a.getIntentShortName(intentTypes[1]),
+			a.getIntentShortName(intentTypes[2]))
+	}
+
+	return "What specifically would you like to know?"
+}
+
+// getIntentShortName returns a short name for an intent type.
+func (a *IntentDetectionAgent) getIntentShortName(intentType string) string {
+	shortNames := map[string]string{
+		"query_commits":   "code changes",
+		"query_issues":    "tasks/issues",
+		"query_analytics": "statistics",
+		"query_status":    "project status",
+		"command_action":  "executing an action",
+		"request_help":    "help/documentation",
+		"conversation":    "general info",
+	}
+
+	if name, ok := shortNames[intentType]; ok {
+		return name
+	}
+
+	return strings.ReplaceAll(intentType, "_", " ")
 }
 
 // GetMetadata returns agent metadata (implements MetadataProvider).

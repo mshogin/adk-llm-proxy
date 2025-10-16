@@ -37,6 +37,9 @@ type ReasoningContext struct {
 	// Entity extraction outputs
 	Entities map[string]interface{} `json:"entities,omitempty"`
 
+	// Clarification questions for ambiguous intents
+	ClarificationQuestions []ClarificationQuestion `json:"clarification_questions,omitempty"`
+
 	// Reasoning structure outputs
 	Hypotheses    []Hypothesis `json:"hypotheses,omitempty"`
 	Conclusions   []Conclusion `json:"conclusions,omitempty"`
@@ -61,6 +64,14 @@ type Intent struct {
 	Type       string  `json:"type"`
 	Confidence float64 `json:"confidence"`
 	Entities   []string `json:"entities,omitempty"`
+}
+
+// ClarificationQuestion represents a question to clarify ambiguous intent.
+type ClarificationQuestion struct {
+	Question      string   `json:"question"`
+	Options       []string `json:"options,omitempty"`
+	PossibleIntents []string `json:"possible_intents"`
+	Reason        string   `json:"reason"`
 }
 
 // Hypothesis represents a reasoning hypothesis.
