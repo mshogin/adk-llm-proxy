@@ -945,7 +945,7 @@ tests/golang/internal/domain/services/agents/
 - [x] Implement distributed tracing with trace_id
 - [x] Add Prometheus metrics export
 - [x] Create structured logging with ELK-compatible format
-- [ ] Implement performance profiling per agent
+- [x] Implement performance profiling per agent
 - [x] Add cost reporting per session and per agent
 - [ ] Create real-time monitoring dashboard (optional)
 - [ ] Add alerting on budget overruns and SLA violations
