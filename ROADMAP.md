@@ -948,7 +948,7 @@ tests/golang/internal/domain/services/agents/
 - [x] Implement performance profiling per agent
 - [x] Add cost reporting per session and per agent
 - [ ] Create real-time monitoring dashboard (optional)
-- [ ] Add alerting on budget overruns and SLA violations
+- [x] Add alerting on budget overruns and SLA violations
 - [x] Create unit tests for metrics collection
 - [ ] Document metrics format and export endpoints
 
