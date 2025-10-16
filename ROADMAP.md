@@ -950,7 +950,7 @@ tests/golang/internal/domain/services/agents/
 - [ ] Create real-time monitoring dashboard (optional)
 - [x] Add alerting on budget overruns and SLA violations
 - [x] Create unit tests for metrics collection
-- [ ] Document metrics format and export endpoints
+- [x] Document metrics format and export endpoints
 
 **Implementation notes:**
 - Metrics structure:
