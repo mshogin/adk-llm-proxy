@@ -1003,7 +1003,7 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Document LLM selection policies and model profiles
 - [x] Add troubleshooting guide for common issues
 - [x] Create example pipeline configurations
-- [ ] Document performance targets and SLA criteria
+- [x] Document performance targets and SLA criteria
 - [ ] Add architecture diagrams (agent flow, context structure, LLM selection)
 
 **Implementation notes:**
