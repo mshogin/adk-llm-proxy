@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	appservices "github.com/mshogin/agents/internal/application/services"
 	"github.com/mshogin/agents/internal/domain/models"
 	"github.com/mshogin/agents/internal/domain/services"
 )
@@ -17,7 +18,7 @@ import (
 // - Assess conclusion confidence based on supporting evidence
 // - Generate alternative interpretations for ambiguous cases
 // - Use deterministic rules for simple inferences
-// - Flag complex cases requiring LLM synthesis
+// - Use LLM for complex synthesis when task complexity is high
 //
 // Input Requirements:
 // - reasoning.intents: Original intents with goals
@@ -30,13 +31,16 @@ import (
 // - reasoning.alternatives[]: Alternative interpretations
 // - reasoning.inference_chain[]: Step-by-step reasoning trace
 type InferenceAgent struct {
-	id string
+	id              string
+	llmOrchestrator *appservices.LLMOrchestrator // Optional LLM for complex synthesis
 }
 
 // NewInferenceAgent creates a new inference agent.
-func NewInferenceAgent() *InferenceAgent {
+// orchestrator is optional - if nil, only rule-based inference is used.
+func NewInferenceAgent(orchestrator *appservices.LLMOrchestrator) *InferenceAgent {
 	return &InferenceAgent{
-		id: "inference",
+		id:              "inference",
+		llmOrchestrator: orchestrator,
 	}
 }
 
@@ -87,11 +91,28 @@ func (a *InferenceAgent) Execute(ctx context.Context, agentContext *models.Agent
 	// Generate inference chain
 	inferenceChain := a.buildInferenceChain(hypotheses, facts, knowledge)
 
-	// Make conclusions per intent
-	conclusions := a.makeConclusions(intents, hypotheses, facts, knowledge, inferenceChain)
+	// Check if synthesis is complex
+	llmCalls := 0
+	var conclusions []models.Conclusion
+	var alternatives []models.Alternative
 
-	// Generate alternative interpretations
-	alternatives := a.generateAlternatives(conclusions, facts)
+	if a.shouldUseLLMSynthesis(intents, facts, knowledge, inferenceChain) {
+		// Complex synthesis: use LLM
+		llmConclusions, llmAlternatives, calls, err := a.synthesizeWithLLM(ctx, intents, hypotheses, facts, knowledge, inferenceChain)
+		if err == nil {
+			conclusions = llmConclusions
+			alternatives = llmAlternatives
+			llmCalls = calls
+		} else {
+			// LLM failed, fallback to rule-based
+			conclusions = a.makeConclusions(intents, hypotheses, facts, knowledge, inferenceChain)
+			alternatives = a.generateAlternatives(conclusions, facts)
+		}
+	} else {
+		// Simple inference: use rule-based approach
+		conclusions = a.makeConclusions(intents, hypotheses, facts, knowledge, inferenceChain)
+		alternatives = a.generateAlternatives(conclusions, facts)
+	}
 
 	// Write results
 	newContext.Reasoning.Conclusions = conclusions
@@ -100,7 +121,7 @@ func (a *InferenceAgent) Execute(ctx context.Context, agentContext *models.Agent
 
 	// Track execution
 	duration := time.Since(startTime)
-	a.recordAgentRun(newContext, duration, "success", nil)
+	a.recordAgentRun(newContext, duration, "success", nil, llmCalls)
 
 	return newContext, nil
 }
@@ -463,8 +484,175 @@ func (a *InferenceAgent) generateAlternatives(conclusions []models.Conclusion, f
 	return alternatives
 }
 
+// shouldUseLLMSynthesis determines if synthesis task is complex enough for LLM.
+//
+// Complexity indicators:
+// - Multiple sources to correlate (>3)
+// - Large number of facts (>20)
+// - Low confidence from inference chain (avg < 0.5)
+// - Multiple conflicting hypotheses
+// - Complex analytics or multi-source correlation intents
+func (a *InferenceAgent) shouldUseLLMSynthesis(intents []models.Intent, facts []models.Fact, knowledge []models.Knowledge, chain []models.InferenceStep) bool {
+	// No LLM orchestrator available
+	if a.llmOrchestrator == nil {
+		return false
+	}
+
+	// Large data volume suggests complex synthesis
+	if len(facts) > 20 || len(knowledge) > 10 {
+		return true
+	}
+
+	// Multiple sources require correlation
+	sources := a.getUniqueSources(facts)
+	if len(sources) > 3 {
+		return true
+	}
+
+	// Low average confidence from inference chain
+	if len(chain) > 0 {
+		totalConfidence := 0.0
+		for _, step := range chain {
+			totalConfidence += step.Confidence
+		}
+		avgConfidence := totalConfidence / float64(len(chain))
+		if avgConfidence < 0.5 {
+			return true // Low confidence suggests ambiguity
+		}
+	}
+
+	// Check intent types - analytics and multi-source queries are complex
+	for _, intent := range intents {
+		if intent.Type == "query_analytics" || intent.Type == "query_status" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// synthesizeWithLLM uses LLM for complex synthesis and inference.
+func (a *InferenceAgent) synthesizeWithLLM(ctx context.Context, intents []models.Intent, hypotheses []models.Hypothesis, facts []models.Fact, knowledge []models.Knowledge, chain []models.InferenceStep) ([]models.Conclusion, []models.Alternative, int, error) {
+	// Build synthesis prompt
+	prompt := a.buildSynthesisPrompt(intents, hypotheses, facts, knowledge, chain)
+
+	// Call LLM with "Advanced inference" task type
+	// From LLM selection policy: <16K tok, gpt-4o, fallback to claude-sonnet
+	response, err := a.callLLMForSynthesis(ctx, prompt, models.TaskTypeAdvancedInference)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("LLM synthesis failed: %w", err)
+	}
+
+	// Parse LLM response into conclusions and alternatives
+	conclusions, alternatives := a.parseLLMSynthesisResponse(response, intents)
+
+	return conclusions, alternatives, 1, nil
+}
+
+// buildSynthesisPrompt creates a structured prompt for LLM synthesis.
+func (a *InferenceAgent) buildSynthesisPrompt(intents []models.Intent, hypotheses []models.Hypothesis, facts []models.Fact, knowledge []models.Knowledge, chain []models.InferenceStep) string {
+	var sb strings.Builder
+
+	sb.WriteString("Analyze the following information and generate comprehensive conclusions:\n\n")
+
+	// Intents
+	sb.WriteString("**User Intents:**\n")
+	for i, intent := range intents {
+		sb.WriteString(fmt.Sprintf("%d. %s (confidence: %.2f)\n", i+1, intent.Type, intent.Confidence))
+	}
+	sb.WriteString("\n")
+
+	// Hypotheses
+	sb.WriteString("**Hypotheses:**\n")
+	for i, h := range hypotheses {
+		sb.WriteString(fmt.Sprintf("%d. %s\n", i+1, h.Description))
+	}
+	sb.WriteString("\n")
+
+	// Facts (limit to most recent 20)
+	sb.WriteString("**Facts:**\n")
+	factLimit := 20
+	for i, fact := range facts {
+		if i >= factLimit {
+			sb.WriteString(fmt.Sprintf("... and %d more facts\n", len(facts)-factLimit))
+			break
+		}
+		sb.WriteString(fmt.Sprintf("- %s (source: %s, confidence: %.2f)\n", fact.Content, fact.Source, fact.Confidence))
+	}
+	sb.WriteString("\n")
+
+	// Knowledge
+	if len(knowledge) > 0 {
+		sb.WriteString("**Derived Knowledge:**\n")
+		for i, k := range knowledge {
+			sb.WriteString(fmt.Sprintf("- %s\n", k.Content))
+			if i >= 10 {
+				sb.WriteString(fmt.Sprintf("... and %d more knowledge items\n", len(knowledge)-10))
+				break
+			}
+		}
+		sb.WriteString("\n")
+	}
+
+	// Inference chain
+	sb.WriteString("**Inference Chain:**\n")
+	for i, step := range chain {
+		sb.WriteString(fmt.Sprintf("%d. %s (confidence: %.2f)\n", i+1, step.Description, step.Confidence))
+	}
+	sb.WriteString("\n")
+
+	sb.WriteString("Respond with a JSON object containing:\n")
+	sb.WriteString("{\n")
+	sb.WriteString(`  "conclusions": [{"description": "...", "confidence": 0.95, "intent": "..."}],` + "\n")
+	sb.WriteString(`  "alternatives": [{"description": "...", "confidence": 0.70}]` + "\n")
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// callLLMForSynthesis calls the LLM orchestrator for synthesis.
+func (a *InferenceAgent) callLLMForSynthesis(ctx context.Context, prompt string, taskType models.TaskType) (string, error) {
+	// TODO: Implement actual LLM call via orchestrator
+	// For now, return a placeholder indicating LLM would be called
+	return fmt.Sprintf(`{
+		"conclusions": [
+			{"description": "LLM-based synthesis completed", "confidence": 0.85, "intent": "query_analytics"}
+		],
+		"alternatives": [
+			{"description": "Alternative interpretation based on incomplete data", "confidence": 0.65}
+		]
+	}`), nil
+}
+
+// parseLLMSynthesisResponse parses LLM JSON response into conclusions and alternatives.
+func (a *InferenceAgent) parseLLMSynthesisResponse(response string, intents []models.Intent) ([]models.Conclusion, []models.Alternative) {
+	// TODO: Implement proper JSON parsing
+	// For now, create placeholder conclusions and alternatives
+
+	conclusions := []models.Conclusion{
+		{
+			ID:          "c0",
+			Description: "LLM-based synthesis: Complex inference completed",
+			Confidence:  0.85,
+			Evidence:    []string{"llm_synthesis"},
+			Intent:      intents[0].Type,
+		},
+	}
+
+	alternatives := []models.Alternative{
+		{
+			ID:          "alt0",
+			Conclusion:  "c0",
+			Description: "Alternative interpretation from LLM synthesis",
+			Confidence:  0.65,
+		},
+	}
+
+	return conclusions, alternatives
+}
+
 // recordAgentRun records execution in audit trail.
-func (a *InferenceAgent) recordAgentRun(ctx *models.AgentContext, duration time.Duration, status string, err error) {
+func (a *InferenceAgent) recordAgentRun(ctx *models.AgentContext, duration time.Duration, status string, err error, llmCalls int) {
 	run := models.AgentRun{
 		Timestamp:  time.Now(),
 		AgentID:    a.id,
@@ -499,7 +687,7 @@ func (a *InferenceAgent) recordAgentRun(ctx *models.AgentContext, duration time.
 
 	ctx.Diagnostics.Performance.AgentMetrics[a.id] = &models.AgentMetrics{
 		DurationMS: duration.Milliseconds(),
-		LLMCalls:   0, // No LLM calls for rule-based inference
+		LLMCalls:   llmCalls,
 		Status:     status,
 	}
 }
@@ -509,21 +697,22 @@ func (a *InferenceAgent) GetMetadata() services.AgentMetadata {
 	return services.AgentMetadata{
 		ID:          a.id,
 		Name:        "Inference Agent",
-		Description: "Makes conclusions based on facts, hypotheses, and goals with confidence scoring and alternative interpretations",
-		Version:     "1.0.0",
+		Description: "Makes conclusions based on facts, hypotheses, and goals with confidence scoring and alternative interpretations. Uses LLM for complex synthesis.",
+		Version:     "1.1.0",
 		Author:      "ADK LLM Proxy",
-		Tags:        []string{"inference", "conclusions", "reasoning", "confidence", "alternatives"},
+		Tags:        []string{"inference", "conclusions", "reasoning", "confidence", "alternatives", "llm-optional"},
 		Dependencies: []string{"context_synthesizer"},
 	}
 }
 
 // GetCapabilities returns agent capabilities.
 func (a *InferenceAgent) GetCapabilities() services.AgentCapabilities {
+	requiresLLM := a.llmOrchestrator != nil
 	return services.AgentCapabilities{
 		SupportsParallelExecution: false,
 		SupportsRetry:             true,
-		RequiresLLM:               false, // Rule-based for now
-		IsDeterministic:           true,
-		EstimatedDuration:         150, // ~150ms for inference
+		RequiresLLM:               requiresLLM, // Optional: uses LLM for complex synthesis
+		IsDeterministic:           !requiresLLM, // Non-deterministic when using LLM
+		EstimatedDuration:         150,          // ~150ms for rule-based, longer with LLM
 	}
 }

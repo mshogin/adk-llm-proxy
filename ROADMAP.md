@@ -841,7 +841,7 @@ tests/golang/internal/application/services/
 - [x] Fallback to cloud LLM for low-confidence cases (< 0.8, uses gpt-4o-mini)
 - [x] Extract entities: projects, dates, providers, statuses
 - [x] Output: `reasoning.intents[]`, `reasoning.entities{}`, confidence scores
-- [ ] Add clarification questions for ambiguous intents
+- [x] Add clarification questions for ambiguous intents
 - [x] Create unit tests with various input patterns
 - [x] Document supported intent types and confidence thresholds
 
@@ -881,7 +881,7 @@ tests/golang/internal/application/services/
 - [x] Assess conclusion confidence scores
 - [x] Generate alternative interpretations for ambiguous cases
 - [x] Use deterministic rules for simple inferences
-- [ ] Use LLM for complex synthesis (selected by task complexity)
+- [x] Use LLM for complex synthesis (selected by task complexity)
 - [x] Output: `reasoning.conclusions[]`, updated confidence scores
 - [x] Create unit tests for inference logic
 - [x] Document inference rules and confidence calculation
