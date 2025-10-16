@@ -941,7 +941,7 @@ tests/golang/internal/domain/services/agents/
 - [x] Create metrics collector in `src/golang/internal/infrastructure/metrics/collector.go`
 - [x] Track per-agent metrics: duration, status, output size, LLM calls
 - [x] Track LLM metrics: tokens, cost, cache hits, model selection decisions
-- [ ] Track context metrics: size, artifact count, diff size
+- [x] Track context metrics: size, artifact count, diff size
 - [ ] Implement distributed tracing with trace_id
 - [ ] Add Prometheus metrics export
 - [ ] Create structured logging with ELK-compatible format
