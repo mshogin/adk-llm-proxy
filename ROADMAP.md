@@ -991,7 +991,7 @@ tests/golang/internal/infrastructure/metrics/
 
 **Goal**: Comprehensive testing, quality assurance, and complete documentation
 
-- [ ] Create test fixtures for AgentContext in `tests/fixtures/`
+- [x] Create test fixtures for AgentContext in `tests/fixtures/`
 - [ ] Add unit tests for all agents (80%+ coverage per agent)
 - [ ] Add integration tests for full pipeline execution
 - [ ] Create negative test cases (missing keys, invalid inputs, cycles)
