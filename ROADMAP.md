@@ -999,7 +999,7 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Implement reproducibility tests (same input → same output with fixed config)
 - [x] Create validation rule tests (slot completeness, logical consistency)
 - [x] Add cost budget enforcement tests
-- [ ] Create documentation: AgentContext schema, agent contracts, pipeline config
+- [x] Create documentation: AgentContext schema, agent contracts, pipeline config
 - [ ] Document LLM selection policies and model profiles
 - [ ] Add troubleshooting guide for common issues
 - [ ] Create example pipeline configurations
