@@ -1000,8 +1000,8 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Create validation rule tests (slot completeness, logical consistency)
 - [x] Add cost budget enforcement tests
 - [x] Create documentation: AgentContext schema, agent contracts, pipeline config
-- [ ] Document LLM selection policies and model profiles
-- [ ] Add troubleshooting guide for common issues
+- [x] Document LLM selection policies and model profiles
+- [x] Add troubleshooting guide for common issues
 - [ ] Create example pipeline configurations
 - [ ] Document performance targets and SLA criteria
 - [ ] Add architecture diagrams (agent flow, context structure, LLM selection)
