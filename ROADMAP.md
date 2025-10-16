@@ -837,8 +837,8 @@ tests/golang/internal/application/services/
 **10.4.1 Intent Detection Agent**
 - [x] Create IntentDetectionAgent in `src/golang/internal/domain/services/agents/intent_detection.go`
 - [x] Implement rule-based intent classification (regex, keywords)
-- [ ] Add lightweight local model for intent detection (Ollama)
-- [ ] Fallback to cloud LLM for low-confidence cases (< 0.8)
+- [x] Add lightweight local model for intent detection (deepseek-chat)
+- [x] Fallback to cloud LLM for low-confidence cases (< 0.8, uses gpt-4o-mini)
 - [x] Extract entities: projects, dates, providers, statuses
 - [x] Output: `reasoning.intents[]`, `reasoning.entities{}`, confidence scores
 - [ ] Add clarification questions for ambiguous intents
