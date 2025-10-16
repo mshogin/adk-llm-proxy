@@ -152,7 +152,7 @@ func TestExecute_SequentialMode(t *testing.T) {
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
 			executionOrder = append(executionOrder, "agent2")
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}
@@ -216,7 +216,7 @@ func TestExecute_SequentialMode_WithDisabledAgent(t *testing.T) {
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
 			executionOrder = append(executionOrder, "agent3")
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}
@@ -373,7 +373,7 @@ func TestExecute_ParallelMode(t *testing.T) {
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
 			executionTimes["agent3"] = time.Now()
 			newContext := agentContext
-			newContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			newContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return newContext, nil
 		},
 	}
@@ -649,7 +649,7 @@ func TestExecute_ContractValidation(t *testing.T) {
 		preconditions:  []string{"reasoning.intents"}, // Not satisfied
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}
@@ -685,7 +685,7 @@ func TestExecute_ContractValidation_WarningOnly(t *testing.T) {
 		preconditions:  []string{"reasoning.intents"}, // Not satisfied
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}

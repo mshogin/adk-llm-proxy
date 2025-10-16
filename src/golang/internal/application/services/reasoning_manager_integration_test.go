@@ -166,7 +166,7 @@ func TestFullPipeline_Parallel_MultiPath(t *testing.T) {
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
 			agentContext.Reasoning.Conclusions = []models.Conclusion{
-				{ID: "c1", Content: "Analysis complete", Confidence: 0.9},
+				{ID: "c1", Description: "Analysis complete", Confidence: 0.9},
 			}
 			return agentContext, nil
 		},
@@ -329,7 +329,7 @@ func TestFullPipeline_ErrorRecovery(t *testing.T) {
 			if attemptCount <= 2 {
 				return nil, assert.AnError
 			}
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "recovered", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "recovered", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}
@@ -412,7 +412,7 @@ func TestFullPipeline_PerformanceMetrics(t *testing.T) {
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
 			time.Sleep(20 * time.Millisecond)
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}
@@ -485,7 +485,7 @@ func TestFullPipeline_ContractViolation(t *testing.T) {
 		preconditions:  []string{"reasoning.intents"},
 		postconditions: []string{"reasoning.conclusions"},
 		executeFn: func(ctx context.Context, agentContext *models.AgentContext) (*models.AgentContext, error) {
-			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Content: "test", Confidence: 0.9}}
+			agentContext.Reasoning.Conclusions = []models.Conclusion{{ID: "c1", Description: "test", Confidence: 0.9}}
 			return agentContext, nil
 		},
 	}

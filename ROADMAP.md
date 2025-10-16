@@ -993,7 +993,7 @@ tests/golang/internal/infrastructure/metrics/
 
 - [x] Create test fixtures for AgentContext in `tests/fixtures/`
 - [x] Add unit tests for all agents (80%+ coverage per agent)
-- [ ] Add integration tests for full pipeline execution
+- [x] Add integration tests for full pipeline execution
 - [ ] Create negative test cases (missing keys, invalid inputs, cycles)
 - [ ] Add performance benchmarks (latency, LLM call frequency, cost per session)
 - [ ] Implement reproducibility tests (same input → same output with fixed config)
