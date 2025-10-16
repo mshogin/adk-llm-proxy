@@ -1048,14 +1048,14 @@ docs/reasoning_system/
 - Trace coverage: 100% of agent runs logged with trace_id
 
 **Success Criteria:**
-- [ ] All agents independent, communicate only via AgentContext
-- [ ] Pipeline configurable with sequential/parallel/conditional modes
-- [ ] Dynamic LLM selection works, decisions logged in context
-- [ ] Performance targets met for non-LLM operations
-- [ ] Budget controls enforced, cost tracking accurate
-- [ ] Full reasoning traces reproducible
-- [ ] Test coverage: 80%+ modules, 60%+ integration
-- [ ] Validation catches incomplete slots, cycles, inconsistencies
+- [x] All agents independent, communicate only via AgentContext
+- [x] Pipeline configurable with sequential/parallel/conditional modes
+- [x] Dynamic LLM selection works, decisions logged in context
+- [x] Performance targets met for non-LLM operations
+- [x] Budget controls enforced, cost tracking accurate
+- [x] Full reasoning traces reproducible
+- [x] Test coverage: 80%+ modules, 60%+ integration
+- [x] Validation catches incomplete slots, cycles, inconsistencies
 
 **Risks & Mitigations:**
 - **Risk**: LLM cost overrun → **Mitigation**: Strict budget limits, caching, degradation
