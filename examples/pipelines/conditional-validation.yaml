@@ -1,0 +1,163 @@
+# Conditional Validation Pipeline Configuration
+#
+# This pipeline uses conditional execution: agents run only if specific conditions are met.
+# Use this for adaptive workflows that skip unnecessary steps based on context.
+#
+# Execution flow:
+# Intent Detection → [Retrieval?] → [Synthesis?] → Inference → [Validation?] → Summarization
+#                     (if needs_data)  (if has_data)            (if high_stakes)
+
+pipeline:
+  # Conditional mode: agents execute based on context conditions
+  mode: conditional
+
+  # Agent configurations
+  agents:
+    # Always run: Intent detection
+    - id: intent_detection
+      enabled: true
+      timeout: 5000
+      retry: 2
+      condition: ""         # Always run (no condition)
+
+    # Always run: Build reasoning structure
+    - id: reasoning_structure
+      enabled: true
+      timeout: 5000
+      retry: 1
+      condition: ""
+
+    # Conditional: Run retrieval planner only if query intent detected
+    - id: retrieval_planner
+      enabled: true
+      timeout: 5000
+      retry: 1
+      condition: "has_query_intent"  # Check reasoning.intents for "query" type
+
+    # Conditional: Run retrieval only if plan exists
+    - id: retrieval_gitlab
+      enabled: true
+      timeout: 15000
+      retry: 2
+      condition: "has_retrieval_plan"  # Check retrieval.plans exists
+
+    # Conditional: Run synthesis only if facts were retrieved
+    - id: context_synthesizer
+      enabled: true
+      timeout: 10000
+      retry: 1
+      condition: "has_retrieval_artifacts"  # Check retrieval.artifacts exists
+
+    # Always run: Make inferences
+    - id: inference
+      enabled: true
+      timeout: 10000
+      retry: 1
+      condition: ""
+
+    # Conditional: Run validation only for high-stakes decisions
+    - id: validation
+      enabled: true
+      timeout: 5000
+      retry: 0
+      condition: "high_stakes"  # Check metadata.flags.high_stakes == true
+
+    # Conditional: Run deep reasoning only if validation fails
+    - id: deep_reasoning
+      enabled: true
+      timeout: 30000
+      retry: 1
+      condition: "validation_failed"  # Check diagnostics.validation_reports has failures
+
+    # Always run: Generate summary
+    - id: summarization
+      enabled: true
+      timeout: 5000
+      retry: 0
+      condition: ""
+
+  # Execution options
+  options:
+    validate_contract: false    # Disable contract validation (optional agents may skip postconditions)
+    fail_on_violation: false    # Continue even if optional agent fails
+    track_performance: true
+
+# LLM Orchestrator Configuration
+llm:
+  # Budget constraints
+  budget:
+    session_budget_usd: 0.75    # $0.75 max per session
+    agent_budget_usd: 0.15      # $0.15 max per agent
+    warning_threshold: 0.80
+    critical_agents:
+      - intent_detection        # Critical: always run
+      - inference               # Critical: always run
+      - summarization           # Critical: always run
+
+  # Cache configuration
+  cache:
+    enabled: true
+    classification_ttl: 86400
+    synthesis_ttl: 3600
+    inference_ttl: 1800
+
+# Condition Definitions
+#
+# Conditions are evaluated by checking AgentContext fields:
+#
+# has_query_intent:
+#   - Check: len(reasoning.intents) > 0 && any intent has type "query"
+#
+# has_retrieval_plan:
+#   - Check: len(retrieval.plans) > 0
+#
+# has_retrieval_artifacts:
+#   - Check: len(retrieval.artifacts) > 0
+#
+# high_stakes:
+#   - Check: metadata.flags.high_stakes == true
+#   - Set by intent detection if user query contains "critical", "production", "urgent"
+#
+# validation_failed:
+#   - Check: len(diagnostics.validation_reports) > 0 && any report has passed == false
+
+# Expected Performance
+# - Total latency: <3s (best case, all agents skipped), <20s (worst case, all agents run)
+# - Agent count: 4-9 (depends on conditions)
+# - Typical cost: $0.01-0.15 per session (varies widely)
+#
+# Performance Notes
+# - Skipping unnecessary agents saves time and cost
+# - Best for workflows with variable complexity
+# - Minimal overhead: condition checks take <1ms each
+#
+# Use Cases
+# - Adaptive question answering (retrieval only if needed)
+# - Progressive reasoning (deep reasoning only if simple inference fails)
+# - Budget-constrained workflows (skip expensive agents when possible)
+# - Mixed query types (analytics vs simple lookups)
+#
+# Example Scenarios
+#
+# Scenario 1: Simple question "What is 2+2?"
+# - Intent detection: ✓ (no query intent)
+# - Reasoning structure: ✓
+# - Retrieval planner: ✗ (skipped, no query intent)
+# - Retrieval: ✗ (skipped, no plan)
+# - Synthesis: ✗ (skipped, no artifacts)
+# - Inference: ✓
+# - Validation: ✗ (skipped, not high stakes)
+# - Summarization: ✓
+# - Cost: ~$0.01, Latency: ~3s
+#
+# Scenario 2: Complex query "What are the critical production issues in GitLab?"
+# - Intent detection: ✓ (query intent + high_stakes flag)
+# - Reasoning structure: ✓
+# - Retrieval planner: ✓ (has query intent)
+# - Retrieval: ✓ (has plan)
+# - Synthesis: ✓ (has artifacts)
+# - Inference: ✓
+# - Validation: ✓ (high_stakes)
+# - Deep reasoning: ? (only if validation fails)
+# - Summarization: ✓
+# - Cost: ~$0.10-0.15, Latency: ~15-20s

@@ -1,0 +1,336 @@
+# Production-Ready Full Pipeline Configuration
+#
+# This is a comprehensive production configuration with all features enabled:
+# - Parallel execution for performance
+# - Complete agent coverage (7 agents)
+# - Budget controls and cost tracking
+# - Aggressive caching
+# - Performance monitoring
+# - Graceful degradation
+#
+# Use this as a starting point for production deployments.
+
+pipeline:
+  # Parallel mode for optimal performance
+  mode: parallel
+
+  # Complete agent pipeline
+  agents:
+    # Phase 1: Intent Analysis
+    - id: intent_detection
+      enabled: true
+      timeout: 5000      # 5 seconds
+      retry: 2
+      depends_on: []
+
+    # Phase 2: Structure Planning
+    - id: reasoning_structure
+      enabled: true
+      timeout: 5000
+      retry: 1
+      depends_on:
+        - intent_detection
+
+    # Phase 3: Retrieval Planning
+    - id: retrieval_planner
+      enabled: true
+      timeout: 8000
+      retry: 1
+      depends_on:
+        - intent_detection
+        - reasoning_structure
+
+    # Phase 4: Parallel Data Retrieval
+    # Note: Add/remove retrieval agents based on your data sources
+    - id: retrieval_gitlab
+      enabled: true
+      timeout: 20000     # 20 seconds for API calls
+      retry: 3           # Retry on network failures
+      depends_on:
+        - retrieval_planner
+
+    - id: retrieval_youtrack
+      enabled: true
+      timeout: 20000
+      retry: 3
+      depends_on:
+        - retrieval_planner
+
+    - id: retrieval_database
+      enabled: true
+      timeout: 15000
+      retry: 2
+      depends_on:
+        - retrieval_planner
+
+    # Phase 5: Data Synthesis
+    - id: context_synthesizer
+      enabled: true
+      timeout: 10000
+      retry: 1
+      depends_on:
+        - retrieval_gitlab
+        - retrieval_youtrack
+        - retrieval_database
+
+    # Phase 6: Inference
+    - id: inference
+      enabled: true
+      timeout: 15000     # 15 seconds for complex LLM calls
+      retry: 1
+      depends_on:
+        - reasoning_structure
+        - context_synthesizer
+
+    # Phase 7: Validation
+    - id: validation
+      enabled: true
+      timeout: 5000
+      retry: 0           # Don't retry validation
+      depends_on:
+        - inference
+
+    # Phase 8: Summarization
+    - id: summarization
+      enabled: true
+      timeout: 8000
+      retry: 0
+      depends_on:
+        - validation
+
+  # Execution options (production settings)
+  options:
+    validate_contract: false    # Disable in production (validated in dev/staging)
+    fail_on_violation: false    # Graceful degradation
+    track_performance: true     # Enable performance monitoring
+
+# LLM Orchestrator Configuration
+llm:
+  # Provider configurations
+  providers:
+    # Ollama (local, free)
+    ollama:
+      enabled: true
+      base_url: "http://localhost:11434/v1"
+      timeout_ms: 10000
+      models:
+        - mistral
+        - llama3
+
+    # DeepSeek (cheap cloud option)
+    deepseek:
+      enabled: true
+      api_key: "${DEEPSEEK_API_KEY}"
+      base_url: "https://api.deepseek.com/v1"
+      timeout_ms: 15000
+      max_requests_per_second: 20
+      models:
+        - deepseek-chat
+        - deepseek-r1
+
+    # OpenAI (balanced option)
+    openai:
+      enabled: true
+      api_key: "${OPENAI_API_KEY}"
+      base_url: "https://api.openai.com/v1"
+      timeout_ms: 20000
+      max_requests_per_second: 50
+      models:
+        - gpt-4o-mini
+        - gpt-4o
+        - o1-mini
+        - o1
+
+    # Anthropic (long context option)
+    anthropic:
+      enabled: true
+      api_key: "${ANTHROPIC_API_KEY}"
+      base_url: "https://api.anthropic.com/v1"
+      timeout_ms: 30000
+      max_requests_per_second: 20
+      models:
+        - claude-3-haiku
+        - claude-3-5-sonnet
+        - claude-opus
+
+  # Budget constraints (adjust based on your needs)
+  budget:
+    session_budget_usd: 2.00    # $2.00 max per session
+    agent_budget_usd: 0.50      # $0.50 max per agent
+    warning_threshold: 0.75     # Warn at 75% to allow time for adjustments
+    critical_agents:
+      - intent_detection        # Always run these agents even if budget exceeded
+      - validation
+      - summarization
+
+  # Cache configuration (aggressive caching for production)
+  cache:
+    enabled: true
+    max_entries: 10000          # Store up to 10K cached responses
+    max_size_mb: 500            # 500MB cache limit
+    classification_ttl: 86400   # 24 hours for classification
+    synthesis_ttl: 3600         # 1 hour for synthesis
+    inference_ttl: 1800         # 30 minutes for inference
+
+  # Model selection strategy
+  selection:
+    # Default models by task type
+    defaults:
+      intent_classification: "deepseek/deepseek-chat"
+      entity_extraction: "deepseek/deepseek-chat"
+      simple_validation: "deepseek/deepseek-chat"
+      keyword_search: "openai/gpt-4o-mini"
+      short_synthesis: "openai/gpt-4o-mini"
+      medium_synthesis: "openai/gpt-4o"
+      complex_planning: "openai/gpt-4o"
+      advanced_inference: "openai/gpt-4o"
+      long_context: "anthropic/claude-3-5-sonnet"
+      deep_reasoning: "openai/o1-mini"
+      critical_reasoning: "openai/o1"
+
+    # Fallback chains (provider → fallback1 → fallback2)
+    fallbacks:
+      deepseek_chat: ["openai/gpt-4o-mini", "ollama/mistral"]
+      gpt_4o_mini: ["deepseek/deepseek-chat", "ollama/mistral"]
+      gpt_4o: ["anthropic/claude-3-5-sonnet", "openai/gpt-4o-mini"]
+      claude_sonnet: ["openai/gpt-4o", "openai/gpt-4o-mini"]
+
+    # Budget-aware downgrade rules
+    budget_downgrades:
+      "openai/o1": "openai/o1-mini"           # Downgrade expensive reasoning
+      "openai/o1-mini": "openai/gpt-4o"
+      "openai/gpt-4o": "openai/gpt-4o-mini"
+      "anthropic/claude-opus": "anthropic/claude-3-5-sonnet"
+      "anthropic/claude-3-5-sonnet": "anthropic/claude-3-haiku"
+
+  # Security and filtering
+  security:
+    pii_masking: true           # Mask emails, phones, SSNs, credit cards
+    field_truncation: true      # Truncate large fields to prevent context explosion
+    max_field_length: 10000     # Max characters per field
+
+# Observability Configuration
+observability:
+  # Structured logging
+  logging:
+    level: "info"               # info, debug, warn, error
+    format: "json"              # json (ELK-compatible) or text
+    output: "stdout"            # stdout or file path
+
+  # Metrics export
+  metrics:
+    enabled: true
+    prometheus:
+      enabled: true
+      port: 9090
+      path: "/metrics"
+
+    # Custom metrics
+    track:
+      - agent_duration_ms
+      - agent_llm_calls
+      - agent_tokens
+      - agent_cost_usd
+      - session_total_cost
+      - session_duration_ms
+      - cache_hit_rate
+      - provider_uptime
+      - budget_usage_percent
+
+  # Distributed tracing
+  tracing:
+    enabled: true
+    trace_id_header: "X-Trace-ID"  # Extract trace ID from request header
+    span_per_agent: true            # Create span for each agent execution
+
+  # Alerting
+  alerts:
+    enabled: true
+    rules:
+      - name: "budget_warning"
+        condition: "budget_usage > 0.75"
+        severity: "warning"
+        channels: ["slack", "pagerduty"]
+
+      - name: "budget_exceeded"
+        condition: "budget_usage >= 1.0"
+        severity: "critical"
+        channels: ["slack", "pagerduty"]
+
+      - name: "high_latency"
+        condition: "session_duration_ms > 30000"  # >30s
+        severity: "warning"
+        channels: ["slack"]
+
+      - name: "agent_failure_rate"
+        condition: "agent_failure_rate > 0.10"    # >10% failures
+        severity: "critical"
+        channels: ["slack", "pagerduty"]
+
+# Performance Targets
+performance:
+  # SLA targets
+  targets:
+    p50_latency_ms: 5000        # 50th percentile: 5s
+    p95_latency_ms: 15000       # 95th percentile: 15s
+    p99_latency_ms: 30000       # 99th percentile: 30s
+    cache_hit_rate: 0.40        # 40% cache hits
+    success_rate: 0.99          # 99% success rate
+
+  # Resource limits
+  limits:
+    max_concurrent_sessions: 100
+    max_context_size_mb: 10
+    max_artifacts_per_session: 50
+
+# Deployment Configuration
+deployment:
+  # Server settings
+  server:
+    host: "0.0.0.0"
+    port: 8001
+    workers: 4                  # Number of worker processes
+    max_connections: 1000
+
+  # Graceful shutdown
+  shutdown:
+    timeout_seconds: 30         # Wait 30s for in-flight requests
+
+  # Health checks
+  health:
+    endpoint: "/health"
+    liveness_probe: "/health/live"
+    readiness_probe: "/health/ready"
+
+# Environment-Specific Overrides
+#
+# Development:
+#   - Enable contract validation
+#   - Reduce timeouts for faster feedback
+#   - Use local models (Ollama) when possible
+#
+# Staging:
+#   - Enable contract validation
+#   - Use production-like budgets
+#   - Test all providers
+#
+# Production:
+#   - Disable contract validation
+#   - Enable all monitoring
+#   - Use proven provider configurations
+#   - Enable alerting
+
+# Expected Performance
+# - Total latency (p50): ~5s
+# - Total latency (p99): ~25s
+# - Agent count: 10
+# - Typical cost: $0.10-0.50 per session
+# - Cache hit rate: 40%+
+# - Success rate: 99%+
+#
+# Scaling Recommendations
+# - Horizontal: Deploy multiple instances behind load balancer (stateless agents)
+# - Vertical: 4 CPU cores, 8GB RAM per instance
+# - Cache: Use Redis for shared cache across instances
+# - Metrics: Aggregate metrics in Prometheus
+# - Logs: Ship to ELK stack for centralized logging

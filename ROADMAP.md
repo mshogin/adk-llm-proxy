@@ -1002,7 +1002,7 @@ tests/golang/internal/infrastructure/metrics/
 - [x] Create documentation: AgentContext schema, agent contracts, pipeline config
 - [x] Document LLM selection policies and model profiles
 - [x] Add troubleshooting guide for common issues
-- [ ] Create example pipeline configurations
+- [x] Create example pipeline configurations
 - [ ] Document performance targets and SLA criteria
 - [ ] Add architecture diagrams (agent flow, context structure, LLM selection)
 

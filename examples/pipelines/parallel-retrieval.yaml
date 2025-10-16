@@ -1,0 +1,127 @@
+# Parallel Retrieval Pipeline Configuration
+#
+# This pipeline executes independent retrieval agents in parallel for maximum performance.
+# Use this when fetching data from multiple sources (GitLab, YouTrack, databases, etc.).
+#
+# Execution flow:
+#                    ┌─ Retrieval (GitLab) ──┐
+# Intent Detection ──┼─ Retrieval (YouTrack) ─┼─→ Context Synthesis → Inference → Output
+#                    └─ Retrieval (Database) ─┘
+#                           (parallel)
+
+pipeline:
+  # Parallel mode: agents with same dependencies run concurrently
+  mode: parallel
+
+  # Agent configurations
+  agents:
+    # Root agent: runs first
+    - id: intent_detection
+      enabled: true
+      timeout: 5000
+      retry: 2
+      depends_on: []        # No dependencies (entry point)
+
+    # Planning agent: determines what to retrieve
+    - id: retrieval_planner
+      enabled: true
+      timeout: 5000
+      retry: 1
+      depends_on:
+        - intent_detection  # Needs intents before planning
+
+    # Parallel retrieval agents (run simultaneously)
+    - id: retrieval_gitlab
+      enabled: true
+      timeout: 15000        # 15 seconds for API call
+      retry: 2
+      depends_on:
+        - retrieval_planner # Needs retrieval plan
+
+    - id: retrieval_youtrack
+      enabled: true
+      timeout: 15000
+      retry: 2
+      depends_on:
+        - retrieval_planner # Needs retrieval plan
+
+    - id: retrieval_database
+      enabled: true
+      timeout: 10000
+      retry: 1
+      depends_on:
+        - retrieval_planner # Needs retrieval plan
+
+    # Synthesis agent: merges results from all retrievals
+    - id: context_synthesizer
+      enabled: true
+      timeout: 10000
+      retry: 1
+      depends_on:
+        - retrieval_gitlab
+        - retrieval_youtrack
+        - retrieval_database  # Waits for all retrievals
+
+    # Inference: makes conclusions from synthesized data
+    - id: inference
+      enabled: true
+      timeout: 10000
+      retry: 1
+      depends_on:
+        - context_synthesizer
+
+    # Validation: checks reasoning completeness
+    - id: validation
+      enabled: true
+      timeout: 5000
+      retry: 0
+      depends_on:
+        - inference
+
+    # Summarization: generates final output
+    - id: summarization
+      enabled: true
+      timeout: 5000
+      retry: 0
+      depends_on:
+        - validation
+
+  # Execution options
+  options:
+    validate_contract: true
+    fail_on_violation: true
+    track_performance: true
+
+# LLM Orchestrator Configuration
+llm:
+  # Budget constraints
+  budget:
+    session_budget_usd: 1.00    # $1.00 max per session
+    agent_budget_usd: 0.20      # $0.20 max per agent
+    warning_threshold: 0.80
+    critical_agents:
+      - validation              # Always validate
+      - summarization           # Always summarize
+
+  # Cache configuration
+  cache:
+    enabled: true
+    classification_ttl: 86400
+    synthesis_ttl: 3600
+    inference_ttl: 1800
+
+# Expected Performance
+# - Total latency: <20s (parallel retrieval saves time)
+# - Agent count: 9
+# - Typical cost: $0.05-0.20 per session
+#
+# Performance Notes
+# - Parallel execution reduces latency by ~50% vs sequential
+# - GitLab, YouTrack, Database queries run simultaneously
+# - Single point of failure: any retrieval failure blocks synthesis
+#
+# Use Cases
+# - Multi-source data aggregation
+# - Project status reports (GitLab + YouTrack + metrics)
+# - Cross-system analytics
+# - Comprehensive issue analysis

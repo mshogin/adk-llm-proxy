@@ -1,0 +1,69 @@
+# Sequential Basic Pipeline Configuration
+#
+# This is a simple linear pipeline where agents execute one after another.
+# Use this for straightforward reasoning tasks with clear dependencies.
+#
+# Execution flow:
+# Input → Intent Detection → Reasoning Structure → Inference → Summarization → Output
+
+pipeline:
+  # Sequential mode: agents run one after another in order
+  mode: sequential
+
+  # Agent configurations
+  agents:
+    # Step 1: Detect user intents and extract entities
+    - id: intent_detection
+      enabled: true
+      timeout: 5000      # 5 seconds
+      retry: 2           # Retry up to 2 times on failure
+
+    # Step 2: Build reasoning structure and hypotheses
+    - id: reasoning_structure
+      enabled: true
+      timeout: 5000
+      retry: 1
+
+    # Step 3: Make inferences based on reasoning structure
+    - id: inference
+      enabled: true
+      timeout: 10000     # 10 seconds (may call LLM)
+      retry: 1
+
+    # Step 4: Generate summary of reasoning process
+    - id: summarization
+      enabled: true
+      timeout: 5000
+      retry: 0           # No retries for final step
+
+  # Execution options
+  options:
+    validate_contract: true     # Validate agent contracts (preconditions/postconditions)
+    fail_on_violation: true     # Stop pipeline on contract violation
+    track_performance: true     # Track execution time and metrics
+
+# LLM Orchestrator Configuration
+llm:
+  # Budget constraints
+  budget:
+    session_budget_usd: 0.50    # $0.50 max per session
+    agent_budget_usd: 0.10      # $0.10 max per agent
+    warning_threshold: 0.80     # Warn at 80% budget
+    critical_agents: []         # No critical agents (all respect budget)
+
+  # Cache configuration
+  cache:
+    enabled: true
+    classification_ttl: 86400   # 24 hours
+    synthesis_ttl: 3600         # 1 hour
+    inference_ttl: 1800         # 30 minutes
+
+# Expected Performance
+# - Total latency: <1s (without LLM), <5s (with LLM)
+# - Agent count: 4
+# - Typical cost: $0.01-0.05 per session
+#
+# Use Cases
+# - Simple question answering
+# - Intent-based routing
+# - Basic reasoning without external data sources
