@@ -1125,7 +1125,7 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 - [x] Create `RetrievalExecutorOnlyWorkflow` in `pkg/workflows/retrieval_executor_only.go`
 - [x] Create `ContextSynthesizerOnlyWorkflow` in `pkg/workflows/context_synthesizer_only.go`
 - [x] Create `InferenceOnlyWorkflow` in `pkg/workflows/inference_only.go`
-- [ ] Create `SummarizationOnlyWorkflow` in `pkg/workflows/summarization_only.go`
+- [x] Create `SummarizationOnlyWorkflow` in `pkg/workflows/summarization_only.go`
 - [ ] Create `ValidationOnlyWorkflow` in `pkg/workflows/validation_only.go`
 
 **Implementation notes:**
