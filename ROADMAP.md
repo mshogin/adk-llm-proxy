@@ -1065,6 +1065,440 @@ docs/reasoning_system/
 
 ---
 
+## Phase 11: Single-Agent Integration Testing Infrastructure
+**Goal**: Enable isolated testing and development of individual agents without full pipeline execution
+
+**Current State:**
+- ✅ 8 reasoning agents implemented and working in full pipeline
+- ✅ Full pipeline (advanced workflow) tests passing
+- ⬜ No way to test single agent in isolation
+- ⬜ Difficult to debug specific agent issues
+- ⬜ Slow iteration when developing individual agents
+- ⬜ Complex test setup requiring full pipeline
+
+**Target State:**
+- ✅ 8 single-agent workflows (one per agent)
+- ✅ Mock data providers for all agent preconditions
+- ✅ Integration tests for each agent showing INPUT/OUTPUT/SYSTEM_PROMPT
+- ✅ Fast iteration on individual agents (<1s test execution)
+- ✅ Clear debugging with isolated agent execution
+- ✅ Test utilities (TestServer, MockContextBuilder, ResponseValidator)
+
+**Problem Statement:**
+Currently testing a single agent requires:
+1. Running full pipeline of 8 agents
+2. Setting up all preconditions for agents 1-7
+3. Analyzing output from all 8 agents to find the one you care about
+4. Debugging is difficult due to inter-agent dependencies
+
+**Solution:**
+Create single-agent workflows that:
+1. Start proxy server with ONE agent only
+2. Use mock data providers for preconditions
+3. Show clear INPUT → OUTPUT → SYSTEM_PROMPT for that agent
+4. Execute in milliseconds
+5. Enable point-in-time testing of specific agent
+
+**Use Case:**
+```bash
+# Start server with only IntentDetectionAgent
+./bin/proxy --workflow intent_detection_only
+
+# Test it
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "X-Workflow: intent_detection_only" \
+  -d '{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "test"}]}'
+
+# Get response showing:
+# 📥 INPUT: "test"
+# 📤 OUTPUT: query_commits (0.99)
+# 📤 SYSTEM PROMPT FOR LLM: "You are an AI assistant..."
+```
+
+### 11.1 Single-Agent Workflows Implementation
+
+**Goal**: Create 8 isolated workflows (one per agent) that execute only that agent
+
+- [x] Create `IntentDetectionOnlyWorkflow` in `pkg/workflows/intent_detection_only.go`
+- [ ] Create `ReasoningStructureOnlyWorkflow` in `pkg/workflows/reasoning_structure_only.go`
+- [ ] Create `RetrievalPlannerOnlyWorkflow` in `pkg/workflows/retrieval_planner_only.go`
+- [ ] Create `RetrievalExecutorOnlyWorkflow` in `pkg/workflows/retrieval_executor_only.go`
+- [ ] Create `ContextSynthesizerOnlyWorkflow` in `pkg/workflows/context_synthesizer_only.go`
+- [ ] Create `InferenceOnlyWorkflow` in `pkg/workflows/inference_only.go`
+- [ ] Create `SummarizationOnlyWorkflow` in `pkg/workflows/summarization_only.go`
+- [ ] Create `ValidationOnlyWorkflow` in `pkg/workflows/validation_only.go`
+
+**Implementation notes:**
+- Each workflow implements standard `Workflow` interface
+- Workflow creates mock context with agent preconditions
+- Executes ONLY one agent
+- Returns detailed result with INPUT/OUTPUT/SYSTEM_PROMPT sections
+- Reasoning block format:
+  ```
+  === [AGENT NAME] AGENT TEST ===
+
+  📥 INPUT:
+    [Preconditions data]
+
+  📤 OUTPUT:
+    [Postconditions data]
+
+  💬 LLM INTERACTION (if any):
+    Calls: X
+    Model: gpt-4o-mini
+    Tokens: XXX
+    Cost: $X.XX
+
+  === 📤 SYSTEM PROMPT FOR LLM ===
+  [Exact prompt that would go to LLM]
+
+  ⏱️ METRICS:
+    Duration: Xms
+  ```
+
+**Example implementation structure:**
+```go
+type IntentDetectionOnlyWorkflow struct {
+    agent *agents.IntentDetectionAgent
+}
+
+func (w *IntentDetectionOnlyWorkflow) Execute(ctx context.Context, input *models.ReasoningInput) (*models.ReasoningResult, error) {
+    // 1. Create context from user input
+    agentContext := w.createMockContext(input)
+
+    // 2. Execute agent
+    resultContext, err := w.agent.Execute(ctx, agentContext)
+
+    // 3. Build detailed result showing INPUT/OUTPUT/PROMPT
+    result := w.buildDetailedResult(agentContext, resultContext)
+
+    return result, nil
+}
+```
+
+### 11.2 Mock Data Providers
+
+**Goal**: Create mock providers for all agent preconditions
+
+- [ ] Create `MockIntentProvider` for reasoning_structure agent
+- [ ] Create `MockReasoningProvider` for retrieval_planner agent (intents + hypotheses)
+- [ ] Create `MockRetrievalPlanProvider` for retrieval_executor agent
+- [ ] Create `MockArtifactProvider` for context_synthesizer agent
+- [ ] Create `MockEnrichmentProvider` for inference agent
+- [ ] Create `MockInferenceProvider` for summarization agent
+- [ ] Create `MockCompleteContextProvider` for validation agent
+- [ ] Add fixture data in `tests/golang/fixtures/` directory
+
+**Implementation notes:**
+- Store fixtures in `tests/golang/fixtures/`:
+  - `intent_fixtures.go` - sample intents
+  - `hypothesis_fixtures.go` - sample hypotheses
+  - `plan_fixtures.go` - sample retrieval plans
+  - `artifact_fixtures.go` - sample artifacts
+  - `context_fixtures.go` - complete contexts
+- Each provider creates valid AgentContext with required preconditions
+- Fixtures should cover common scenarios:
+  - Simple case (1-2 intents)
+  - Complex case (multiple intents, entities)
+  - Edge cases (empty, malformed)
+
+**Example fixture:**
+```go
+// tests/golang/fixtures/intent_fixtures.go
+func GetSampleIntents_QueryCommits() []models.Intent {
+    return []models.Intent{
+        {Type: "query_commits", Confidence: 0.99},
+        {Type: "request_help", Confidence: 0.64},
+    }
+}
+
+func GetSampleIntents_QueryIssues() []models.Intent {
+    return []models.Intent{
+        {Type: "query_issues", Confidence: 0.95},
+    }
+}
+```
+
+### 11.3 Test Infrastructure Utilities
+
+**Goal**: Create helper utilities for integration testing
+
+- [ ] Create `TestServer` utility in `tests/golang/integration/single_agent/test_server.go`
+- [ ] Create `MockContextBuilder` in `tests/golang/integration/single_agent/mock_context_builder.go`
+- [ ] Create `ResponseValidator` in `tests/golang/integration/single_agent/response_validator.go`
+- [ ] Create common helpers in `tests/golang/integration/single_agent/helpers.go`
+- [ ] Add documentation in `docs/reasoning_system/single_agent_testing_guide.md`
+
+**Implementation notes:**
+
+**TestServer:**
+```go
+type TestServer struct {
+    httpServer *httptest.Server
+    config     *config.Config
+}
+
+func NewTestServer(workflowName string) *TestServer
+func (ts *TestServer) URL() string
+func (ts *TestServer) Close()
+```
+
+**MockContextBuilder:**
+```go
+type MockContextBuilder struct {
+    ctx *models.AgentContext
+}
+
+func NewMockContextBuilder() *MockContextBuilder
+func (b *MockContextBuilder) WithIntents(...models.Intent) *MockContextBuilder
+func (b *MockContextBuilder) WithHypotheses(...models.Hypothesis) *MockContextBuilder
+func (b *MockContextBuilder) WithPlans(...models.RetrievalPlan) *MockContextBuilder
+func (b *MockContextBuilder) Build() *models.AgentContext
+```
+
+**ResponseValidator:**
+```go
+type ResponseValidator struct {
+    reasoning string
+}
+
+func NewResponseValidator(reasoning string) *ResponseValidator
+func (v *ResponseValidator) AssertHasInput() *ResponseValidator
+func (v *ResponseValidator) AssertHasOutput() *ResponseValidator
+func (v *ResponseValidator) AssertHasSystemPrompt() *ResponseValidator
+func (v *ResponseValidator) AssertSingleAgent(expectedAgentID string) *ResponseValidator
+```
+
+### 11.4 Integration Tests for All Agents
+
+**Goal**: Write comprehensive integration tests for each agent
+
+- [ ] Create `intent_detection_test.go` with 5+ test cases
+- [ ] Create `reasoning_structure_test.go` with 5+ test cases
+- [ ] Create `retrieval_planner_test.go` with 5+ test cases
+- [ ] Create `retrieval_executor_test.go` with 5+ test cases
+- [ ] Create `context_synthesizer_test.go` with 5+ test cases
+- [ ] Create `inference_test.go` with 5+ test cases
+- [ ] Create `summarization_test.go` with 5+ test cases
+- [ ] Create `validation_test.go` with 5+ test cases
+
+**Implementation notes:**
+- Each test file in `tests/golang/integration/single_agent/`
+- Each agent should have at least 5 test cases:
+  1. **Happy path** - normal operation
+  2. **Edge case** - boundary conditions
+  3. **LLM fallback** - test LLM integration (if agent uses LLM)
+  4. **Error handling** - invalid input
+  5. **Performance** - execution time <100ms (no LLM) or <2s (with LLM)
+
+**Example test structure:**
+```go
+func TestIntentDetectionAgent_QueryCommits(t *testing.T) {
+    // 1. Setup
+    server := NewTestServer("intent_detection_only")
+    defer server.Close()
+
+    // 2. Execute
+    req := createTestRequest("What are my recent commits?")
+    resp := sendRequest(t, server, req)
+
+    // 3. Validate
+    reasoning := extractReasoningBlock(t, resp)
+    NewResponseValidator(reasoning).
+        AssertHasInput().
+        AssertHasOutput().
+        AssertHasSystemPrompt().
+        AssertSingleAgent("intent_detection")
+
+    // 4. Check specific outputs
+    assert.Contains(t, reasoning, "query_commits")
+    assert.Contains(t, reasoning, "confidence: 0.99")
+}
+
+func TestIntentDetectionAgent_AmbiguousInput(t *testing.T) {
+    server := NewTestServer("intent_detection_only")
+    defer server.Close()
+
+    req := createTestRequest("Show me something")
+    resp := sendRequest(t, server, req)
+    reasoning := extractReasoningBlock(t, resp)
+
+    // Should have clarification questions
+    assert.Contains(t, reasoning, "Clarification")
+}
+
+func TestIntentDetectionAgent_LLMFallback(t *testing.T) {
+    server := NewTestServer("intent_detection_only")
+    defer server.Close()
+
+    req := createTestRequest("Can you help me understand the configuration?")
+    resp := sendRequest(t, server, req)
+    reasoning := extractReasoningBlock(t, resp)
+
+    // Should show LLM was used
+    assert.Contains(t, reasoning, "💬 LLM INTERACTION")
+    assert.Contains(t, reasoning, "Calls:")
+}
+
+func TestIntentDetectionAgent_Performance(t *testing.T) {
+    server := NewTestServer("intent_detection_only")
+    defer server.Close()
+
+    start := time.Now()
+    req := createTestRequest("test")
+    sendRequest(t, server, req)
+    duration := time.Since(start)
+
+    // Should execute fast (no LLM fallback for simple input)
+    assert.Less(t, duration.Milliseconds(), int64(100))
+}
+
+func TestIntentDetectionAgent_EmptyInput(t *testing.T) {
+    server := NewTestServer("intent_detection_only")
+    defer server.Close()
+
+    req := createTestRequest("")
+    resp := sendRequest(t, server, req)
+
+    // Should handle gracefully
+    assert.Equal(t, 400, resp.StatusCode)
+}
+```
+
+### 11.5 Documentation & Usage Guide
+
+**Goal**: Document how to use single-agent testing infrastructure
+
+- [ ] Create `docs/reasoning_system/single_agent_testing_guide.md`
+- [ ] Add usage examples for each workflow
+- [ ] Document test utilities API
+- [ ] Add troubleshooting section
+- [ ] Create video/GIF demo of workflow
+
+**Documentation contents:**
+1. **Overview** - why single-agent testing
+2. **Quick Start** - run server with one agent
+3. **Test Writing Guide** - how to write tests
+4. **Utilities Reference** - TestServer, MockContextBuilder, ResponseValidator APIs
+5. **Workflow Reference** - all 8 workflows documented
+6. **Examples** - common test scenarios
+7. **Troubleshooting** - common issues and solutions
+
+**Usage examples to document:**
+```bash
+# Start server with single agent
+./bin/proxy --workflow intent_detection_only
+
+# Run all single-agent tests
+go test ./tests/golang/integration/single_agent/... -v
+
+# Run tests for specific agent
+go test ./tests/golang/integration/single_agent/intent_detection_test.go -v
+
+# Run with coverage
+go test ./tests/golang/integration/single_agent/... -cover
+```
+
+### 11.6 Config & CLI Integration
+
+**Goal**: Integrate single-agent workflows into config and CLI
+
+- [ ] Add single-agent workflows to `config.yaml`
+- [ ] Update workflow loader to support single-agent workflows
+- [ ] Add `--agent` CLI flag for quick single-agent testing
+- [ ] Update `GET /workflows` endpoint to list single-agent workflows
+- [ ] Add validation for workflow names
+
+**Implementation notes:**
+- Config format:
+  ```yaml
+  workflows:
+    default: "basic"
+    enabled:
+      - "default"
+      - "basic"
+      - "advanced"
+      # Single-agent workflows
+      - "intent_detection_only"
+      - "reasoning_structure_only"
+      - "retrieval_planner_only"
+      - "retrieval_executor_only"
+      - "context_synthesizer_only"
+      - "inference_only"
+      - "summarization_only"
+      - "validation_only"
+  ```
+
+- CLI flag:
+  ```bash
+  # Quick single-agent mode
+  ./bin/proxy --agent intent_detection
+
+  # Equivalent to:
+  ./bin/proxy --workflow intent_detection_only
+  ```
+
+---
+
+**Files to create:**
+```
+src/golang/pkg/workflows/
+├── intent_detection_only.go
+├── reasoning_structure_only.go
+├── retrieval_planner_only.go
+├── retrieval_executor_only.go
+├── context_synthesizer_only.go
+├── inference_only.go
+├── summarization_only.go
+└── validation_only.go
+
+tests/golang/fixtures/
+├── intent_fixtures.go
+├── hypothesis_fixtures.go
+├── plan_fixtures.go
+├── artifact_fixtures.go
+└── context_fixtures.go
+
+tests/golang/integration/single_agent/
+├── test_server.go
+├── mock_context_builder.go
+├── response_validator.go
+├── helpers.go
+├── intent_detection_test.go
+├── reasoning_structure_test.go
+├── retrieval_planner_test.go
+├── retrieval_executor_test.go
+├── context_synthesizer_test.go
+├── inference_test.go
+├── summarization_test.go
+└── validation_test.go
+
+docs/reasoning_system/
+├── single_agent_testing_spec.md      # Technical specification
+└── single_agent_testing_guide.md     # Usage guide
+```
+
+**Success Criteria:**
+- ✅ All 8 single-agent workflows implemented
+- ✅ Mock providers for all preconditions created
+- ✅ Test utilities (TestServer, MockContextBuilder, ResponseValidator) working
+- ✅ 40+ integration tests written (5+ per agent)
+- ✅ All tests passing
+- ✅ Test execution fast (<1s per agent without LLM, <5s with LLM)
+- ✅ Clear INPUT/OUTPUT/SYSTEM_PROMPT sections in responses
+- ✅ Documentation complete with examples
+- ✅ Can quickly iterate on single agent development
+
+**Benefits:**
+- **Fast iteration**: Test single agent in milliseconds
+- **Easy debugging**: See exactly what agent receives and returns
+- **Point-in-time testing**: Focus on one agent at a time
+- **Clear feedback**: INPUT/OUTPUT/PROMPT clearly shown
+- **Simplified development**: Don't need full pipeline to test changes
+- **Better unit tests**: Can test edge cases easily
+
+---
+
 ## 🎯 Implementation Notes
 
 **Each phase should be implemented incrementally**, with thorough testing before moving to the next phase. Every checkbox represents a discrete, implementable task that can be completed in a single focused session.
