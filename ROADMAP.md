@@ -1120,7 +1120,7 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 **Goal**: Create 8 isolated workflows (one per agent) that execute only that agent
 
 - [x] Create `IntentDetectionOnlyWorkflow` in `pkg/workflows/intent_detection_only.go`
-- [ ] Create `ReasoningStructureOnlyWorkflow` in `pkg/workflows/reasoning_structure_only.go`
+- [x] Create `ReasoningStructureOnlyWorkflow` in `pkg/workflows/reasoning_structure_only.go`
 - [ ] Create `RetrievalPlannerOnlyWorkflow` in `pkg/workflows/retrieval_planner_only.go`
 - [ ] Create `RetrievalExecutorOnlyWorkflow` in `pkg/workflows/retrieval_executor_only.go`
 - [ ] Create `ContextSynthesizerOnlyWorkflow` in `pkg/workflows/context_synthesizer_only.go`
