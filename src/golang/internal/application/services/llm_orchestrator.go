@@ -10,10 +10,14 @@ import (
 	"time"
 
 	"github.com/mshogin/agents/internal/domain/models"
+	"github.com/mshogin/agents/internal/domain/services"
 )
 
 // LLMOrchestrator manages dynamic LLM model selection with cost tracking and caching.
 type LLMOrchestrator struct {
+	// LLM providers for making actual calls
+	providers map[string]services.LLMProvider
+
 	// Model profiles indexed by "provider/model"
 	profiles map[string]*models.ModelProfile
 
@@ -86,6 +90,7 @@ func NewLLMOrchestrator() *LLMOrchestrator {
 	}
 
 	return &LLMOrchestrator{
+		providers:         make(map[string]services.LLMProvider),
 		profiles:          profiles,
 		strategies:        strategies,
 		budgetConstraints: models.DefaultBudgetConstraints(),
@@ -95,6 +100,16 @@ func NewLLMOrchestrator() *LLMOrchestrator {
 		cacheConfig:       models.DefaultCacheConfig(),
 		throttler:         NewLLMThrottler(profiles),
 		decisions:         []models.LLMDecision{},
+	}
+}
+
+// RegisterProviders registers LLM providers for making actual calls.
+func (o *LLMOrchestrator) RegisterProviders(providers map[string]services.LLMProvider) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	for name, provider := range providers {
+		o.providers[name] = provider
 	}
 }
 
@@ -452,4 +467,97 @@ func (o *LLMOrchestrator) GetThrottleStats() map[string]ThrottleStats {
 // UpdateProviderThrottle updates throttling settings for a specific provider/model.
 func (o *LLMOrchestrator) UpdateProviderThrottle(provider, model string, maxRPS int, timeoutMS int) {
 	o.throttler.UpdateRateLimit(provider, model, maxRPS, timeoutMS)
+}
+
+// Call makes an LLM request with automatic model selection, caching, and cost tracking.
+// This is the main entry point for agents to make LLM calls.
+func (o *LLMOrchestrator) Call(ctx context.Context, req *LLMRequest) (*LLMResponse, error) {
+	// Check cache first
+	cacheKey := ""
+	if req.UseCach {
+		model, _, err := o.SelectModel(ctx, req)
+		if err == nil {
+			cacheKey = o.GetCacheKey(req, model)
+			if cached, found := o.GetFromCache(cacheKey); found {
+				// Return cached response
+				return &LLMResponse{
+					Response:        cached.Response,
+					Model:           model,
+					Provider:        "",
+					Tokens:          cached.Tokens,
+					Cost:            cached.Cost,
+					FromCache:       true,
+					SelectionReason: "cached_response",
+				}, nil
+			}
+		}
+	}
+
+	// Select best model for this task
+	model, provider, err := o.SelectModel(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select model: %w", err)
+	}
+
+	// Get provider
+	llmProvider, exists := o.providers[provider]
+	if !exists {
+		return nil, fmt.Errorf("provider %s not available", provider)
+	}
+
+	// Wait for rate limit
+	if err := o.WaitForThrottle(ctx, provider, model); err != nil {
+		return nil, fmt.Errorf("rate limit error: %w", err)
+	}
+
+	// Build completion request
+	maxTokens := req.MaxTokens
+	temperature := req.Temperature
+	completionReq := &models.CompletionRequest{
+		Model: model,
+		Messages: []models.Message{
+			{
+				Role:    "user",
+				Content: req.Prompt,
+			},
+		},
+		MaxTokens:   &maxTokens,
+		Temperature: &temperature,
+		Stream:      false,
+	}
+
+	// Call provider (non-streaming for simplicity)
+	responseChan, err := llmProvider.StreamCompletion(ctx, completionReq)
+	if err != nil {
+		return nil, fmt.Errorf("provider call failed: %w", err)
+	}
+
+	// Collect streaming response
+	fullResponse := ""
+	for chunk := range responseChan {
+		if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
+			fullResponse += chunk.Choices[0].Delta.Content
+		}
+	}
+
+	// Estimate tokens (rough approximation: 1 token ~= 4 characters)
+	totalTokens := len(req.Prompt)/4 + len(fullResponse)/4
+
+	// Calculate cost and track usage
+	cost := o.TrackUsage(req.AgentID, provider, model, totalTokens)
+
+	// Save to cache if enabled
+	if req.UseCach && cacheKey != "" {
+		o.SaveToCache(cacheKey, fullResponse, totalTokens, cost, req.TaskType)
+	}
+
+	return &LLMResponse{
+		Response:        fullResponse,
+		Model:           model,
+		Provider:        provider,
+		Tokens:          totalTokens,
+		Cost:            cost,
+		FromCache:       false,
+		SelectionReason: fmt.Sprintf("selected %s/%s for %s task", provider, model, req.TaskType),
+	}, nil
 }

@@ -78,6 +78,24 @@ func (a *ValidationAgent) Execute(ctx context.Context, agentContext *models.Agen
 		return nil, fmt.Errorf("precondition validation failed: %w", err)
 	}
 
+	// Store detailed agent trace
+	agentTrace := map[string]interface{}{
+		"agent_id": a.id,
+		"input_intents_count": 0,
+		"input_hypotheses_count": 0,
+		"input_conclusions_count": 0,
+		"input_facts_count": 0,
+	}
+
+	if newContext.Reasoning != nil {
+		agentTrace["input_intents_count"] = len(newContext.Reasoning.Intents)
+		agentTrace["input_hypotheses_count"] = len(newContext.Reasoning.Hypotheses)
+		agentTrace["input_conclusions_count"] = len(newContext.Reasoning.Conclusions)
+	}
+	if newContext.Enrichment != nil {
+		agentTrace["input_facts_count"] = len(newContext.Enrichment.Facts)
+	}
+
 	// Run validation checks
 	reports := []models.ValidationReport{}
 	errors := []models.ErrorReport{}
@@ -88,38 +106,91 @@ func (a *ValidationAgent) Execute(ctx context.Context, agentContext *models.Agen
 	reports = append(reports, intentReport)
 	errors = append(errors, intentErrors...)
 	warnings = append(warnings, intentWarnings...)
+	agentTrace["check_1_intent_completeness"] = map[string]interface{}{
+		"passed": intentReport.Passed,
+		"issues_count": len(intentReport.Issues),
+	}
 
 	// Check 2: Hypothesis consistency
 	hypothesisReport, hypothesisErrors, hypothesisWarnings := a.validateHypothesisConsistency(newContext)
 	reports = append(reports, hypothesisReport)
 	errors = append(errors, hypothesisErrors...)
 	warnings = append(warnings, hypothesisWarnings...)
+	agentTrace["check_2_hypothesis_consistency"] = map[string]interface{}{
+		"passed": hypothesisReport.Passed,
+		"issues_count": len(hypothesisReport.Issues),
+	}
 
 	// Check 3: Dependency cycles
 	cycleReport, cycleErrors, cycleWarnings := a.detectDependencyCycles(newContext)
 	reports = append(reports, cycleReport)
 	errors = append(errors, cycleErrors...)
 	warnings = append(warnings, cycleWarnings...)
+	agentTrace["check_3_dependency_cycles"] = map[string]interface{}{
+		"passed": cycleReport.Passed,
+		"issues_count": len(cycleReport.Issues),
+	}
 
 	// Check 4: Conclusion evidence
 	conclusionReport, conclusionErrors, conclusionWarnings := a.validateConclusionEvidence(newContext)
 	reports = append(reports, conclusionReport)
 	errors = append(errors, conclusionErrors...)
 	warnings = append(warnings, conclusionWarnings...)
+	agentTrace["check_4_conclusion_evidence"] = map[string]interface{}{
+		"passed": conclusionReport.Passed,
+		"issues_count": len(conclusionReport.Issues),
+	}
 
 	// Check 5: Fact provenance
 	provenanceReport, provenanceErrors, provenanceWarnings := a.validateFactProvenance(newContext)
 	reports = append(reports, provenanceReport)
 	errors = append(errors, provenanceErrors...)
 	warnings = append(warnings, provenanceWarnings...)
+	agentTrace["check_5_fact_provenance"] = map[string]interface{}{
+		"passed": provenanceReport.Passed,
+		"issues_count": len(provenanceReport.Issues),
+	}
+
+	agentTrace["total_reports"] = len(reports)
+	agentTrace["total_errors"] = len(errors)
+	agentTrace["total_warnings"] = len(warnings)
 
 	// Write results
 	if newContext.Diagnostics == nil {
 		newContext.Diagnostics = &models.DiagnosticsContext{}
 	}
 	newContext.Diagnostics.ValidationReports = reports
+
+	// Ensure Errors and Warnings are initialized to empty slices, not nil
+	if newContext.Diagnostics.Errors == nil {
+		newContext.Diagnostics.Errors = []models.ErrorReport{}
+	}
 	newContext.Diagnostics.Errors = append(newContext.Diagnostics.Errors, errors...)
+
+	if newContext.Diagnostics.Warnings == nil {
+		newContext.Diagnostics.Warnings = []models.Warning{}
+	}
 	newContext.Diagnostics.Warnings = append(newContext.Diagnostics.Warnings, warnings...)
+
+	// Store final output in trace
+	agentTrace["output_reports"] = reports
+	agentTrace["output_errors"] = errors
+	agentTrace["output_warnings"] = warnings
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track execution
 	duration := time.Since(startTime)

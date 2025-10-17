@@ -75,11 +75,29 @@ func (a *SummarizationAgent) Execute(ctx context.Context, agentContext *models.A
 		return nil, fmt.Errorf("precondition validation failed: %w", err)
 	}
 
+	// Store detailed agent trace
+	agentTrace := map[string]interface{}{
+		"agent_id": a.id,
+		"input_intents_count": 0,
+		"input_conclusions_count": 0,
+		"input_facts_count": 0,
+	}
+
+	if newContext.Reasoning != nil {
+		agentTrace["input_intents_count"] = len(newContext.Reasoning.Intents)
+		agentTrace["input_conclusions_count"] = len(newContext.Reasoning.Conclusions)
+	}
+	if newContext.Enrichment != nil {
+		agentTrace["input_facts_count"] = len(newContext.Enrichment.Facts)
+	}
+
 	// Generate executive summary
 	summary := a.generateExecutiveSummary(newContext)
+	agentTrace["summary_length"] = len(summary)
 
 	// Generate structured artifacts
 	artifacts := a.generateArtifacts(newContext)
+	agentTrace["artifacts_count"] = len(artifacts)
 
 	// Write results
 	if newContext.Reasoning == nil {
@@ -87,6 +105,25 @@ func (a *SummarizationAgent) Execute(ctx context.Context, agentContext *models.A
 	}
 	newContext.Reasoning.Summary = summary
 	newContext.Reasoning.Artifacts = artifacts
+
+	// Store final output in trace
+	agentTrace["output_summary"] = summary
+	agentTrace["output_artifacts"] = artifacts
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track execution
 	duration := time.Since(startTime)

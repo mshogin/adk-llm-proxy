@@ -84,15 +84,48 @@ func (a *RetrievalPlannerAgent) Execute(ctx context.Context, agentContext *model
 	hypotheses := newContext.Reasoning.Hypotheses
 	entities := newContext.Reasoning.Entities
 
+	// Store detailed agent trace
+	agentTrace := map[string]interface{}{
+		"agent_id":         a.id,
+		"input_intents":    intents,
+		"input_hypotheses": hypotheses,
+		"input_entities":   entities,
+		"intents_count":    len(intents),
+		"hypotheses_count": len(hypotheses),
+	}
+
 	// Generate retrieval plans based on intents
 	plans := a.generateRetrievalPlans(intents, hypotheses, entities)
+	agentTrace["generated_plans"] = plans
+	agentTrace["plans_count"] = len(plans)
 
 	// Generate normalized queries from plans
 	queries := a.generateQueries(plans, entities)
+	agentTrace["generated_queries"] = queries
+	agentTrace["queries_count"] = len(queries)
 
 	// Write results to context
 	newContext.Retrieval.Plans = plans
 	newContext.Retrieval.Queries = queries
+
+	// Store final output in trace
+	agentTrace["output_plans"] = plans
+	agentTrace["output_queries"] = queries
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track agent execution in audit
 	duration := time.Since(startTime)

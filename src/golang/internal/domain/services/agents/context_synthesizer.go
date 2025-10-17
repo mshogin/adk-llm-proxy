@@ -76,22 +76,55 @@ func (a *ContextSynthesizerAgent) Execute(ctx context.Context, agentContext *mod
 	// Extract artifacts
 	artifacts := newContext.Retrieval.Artifacts
 
+	// Store detailed agent trace
+	agentTrace := map[string]interface{}{
+		"agent_id":        a.id,
+		"input_artifacts": artifacts,
+		"artifacts_count": len(artifacts),
+	}
+
 	// Normalize facts from artifacts
 	facts := a.normalizeFacts(artifacts)
+	agentTrace["normalized_facts_count"] = len(facts)
 
 	// Deduplicate facts
+	beforeDedup := len(facts)
 	facts = a.deduplicateFacts(facts)
+	agentTrace["deduplicated_facts_count"] = len(facts)
+	agentTrace["duplicates_removed"] = beforeDedup - len(facts)
 
 	// Derive knowledge from facts
 	knowledge := a.deriveKnowledge(facts)
+	agentTrace["derived_knowledge_count"] = len(knowledge)
 
 	// Extract relationships
 	relationships := a.extractRelationships(facts)
+	agentTrace["relationships_count"] = len(relationships)
 
 	// Write results
 	newContext.Enrichment.Facts = facts
 	newContext.Enrichment.DerivedKnowledge = knowledge
 	newContext.Enrichment.Relationships = relationships
+
+	// Store final output in trace
+	agentTrace["output_facts"] = facts
+	agentTrace["output_knowledge"] = knowledge
+	agentTrace["output_relationships"] = relationships
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track execution
 	duration := time.Since(startTime)

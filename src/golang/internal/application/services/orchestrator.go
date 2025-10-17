@@ -102,8 +102,21 @@ func (o *Orchestrator) processAsync(
 	// Send reasoning event
 	o.sendEvent(ctx, eventChan, NewReasoningEvent(reasoningResult))
 
-	// Phase 2: Stream LLM completion
-	chunkChan, err := provider.StreamCompletion(ctx, req)
+	// Phase 2: Stream LLM completion with enriched messages
+	// Build enriched request if reasoning workflow provided enriched messages
+	enrichedReq := req
+	if len(reasoningResult.EnrichedMessages) > 0 {
+		// Create new request with enriched messages prepended to original messages
+		enrichedReq = &models.CompletionRequest{
+			Model:       req.Model,
+			Messages:    append(reasoningResult.EnrichedMessages, req.Messages...),
+			MaxTokens:   req.MaxTokens,
+			Temperature: req.Temperature,
+			Stream:      req.Stream,
+		}
+	}
+
+	chunkChan, err := provider.StreamCompletion(ctx, enrichedReq)
 	if err != nil {
 		o.sendEvent(ctx, eventChan, NewErrorEvent(fmt.Sprintf("streaming failed: %v", err)))
 		return

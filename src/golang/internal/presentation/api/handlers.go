@@ -118,8 +118,19 @@ func (h *Handler) streamResponse(w http.ResponseWriter, r *http.Request, req *mo
 			}
 
 		case "error":
-			// Send error as SSE comment
-			if _, err := w.Write([]byte(": error occurred\n\n")); err != nil {
+			// Extract and log error message
+			errorMsg := "unknown error"
+			if errMap, ok := event.Data.(map[string]string); ok {
+				if msg, exists := errMap["message"]; exists {
+					errorMsg = msg
+				}
+			} else if errStr, ok := event.Data.(string); ok {
+				errorMsg = errStr
+			}
+			fmt.Printf("ERROR: %s\n", errorMsg)
+
+			// Send error as SSE comment with actual error message
+			if _, err := w.Write([]byte(fmt.Sprintf(": error: %s\n\n", errorMsg))); err != nil {
 				return
 			}
 			return
@@ -150,7 +161,16 @@ func (h *Handler) bufferResponse(w http.ResponseWriter, r *http.Request, req *mo
 				lastChunk = chunk
 			}
 		} else if event.Type == "error" {
-			h.sendErrorResponse(w, http.StatusInternalServerError, "Processing error")
+			errorMsg := "Processing error"
+			if errMap, ok := event.Data.(map[string]string); ok {
+				if msg, exists := errMap["message"]; exists {
+					errorMsg = msg
+				}
+			} else if errStr, ok := event.Data.(string); ok {
+				errorMsg = errStr
+			}
+			fmt.Printf("ERROR (buffered): %s\n", errorMsg)
+			h.sendErrorResponse(w, http.StatusInternalServerError, errorMsg)
 			return
 		}
 	}

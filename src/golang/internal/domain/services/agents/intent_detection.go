@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -109,38 +110,90 @@ func (a *IntentDetectionAgent) Execute(ctx context.Context, agentContext *models
 		return nil, fmt.Errorf("no input text found in context")
 	}
 
+	// Store detailed agent trace in metadata
+	agentTrace := map[string]interface{}{
+		"agent_id": a.id,
+		"input_received": inputText,
+		"input_length": len(inputText),
+	}
+
 	// Detect intents using rule-based classification
 	intents := a.detectIntents(inputText)
+	agentTrace["rule_based_intents"] = intents
 
 	// Extract entities from input text
 	entities := a.extractEntities(inputText)
+	agentTrace["extracted_entities"] = entities
 
 	// Calculate confidence scores
 	confidenceScores := a.calculateConfidenceScores(intents)
+	agentTrace["confidence_scores"] = confidenceScores
 
 	// LLM fallback for low-confidence cases
 	llmCalls := 0
+	llmPrompt := ""
+	llmResponse := ""
 	if a.shouldUseLLMFallback(confidenceScores) {
-		llmIntents, llmConfidence, calls, err := a.detectIntentsWithLLM(ctx, inputText)
+		// Build and store LLM prompt
+		llmPrompt = a.buildIntentDetectionPrompt(inputText)
+		agentTrace["llm_fallback_triggered"] = true
+		agentTrace["llm_prompt"] = llmPrompt
+		agentTrace["llm_trigger_reason"] = fmt.Sprintf("Primary confidence %.2f below threshold %.2f",
+			confidenceScores["primary_intent"], a.confidenceThreshold)
+
+		llmIntents, llmConfidence, calls, err := a.detectIntentsWithLLMDetailed(ctx, inputText, &llmResponse)
 		llmCalls = calls
+		agentTrace["llm_calls_made"] = llmCalls
+		agentTrace["llm_response"] = llmResponse
 
 		if err == nil && llmConfidence > confidenceScores["primary_intent"] {
 			// LLM provided better confidence, use LLM results
+			agentTrace["llm_result_used"] = true
+			agentTrace["llm_intents"] = llmIntents
+			agentTrace["llm_confidence"] = llmConfidence
 			intents = llmIntents
 			confidenceScores = a.calculateConfidenceScores(intents)
 			confidenceScores["llm_used"] = 1.0
 			confidenceScores["llm_confidence"] = llmConfidence
+		} else {
+			agentTrace["llm_result_used"] = false
+			if err != nil {
+				agentTrace["llm_error"] = err.Error()
+			}
 		}
+	} else {
+		agentTrace["llm_fallback_triggered"] = false
 	}
 
 	// Generate clarification questions for ambiguous intents
 	clarificationQuestions := a.generateClarificationQuestions(intents, confidenceScores)
+	agentTrace["clarification_questions"] = clarificationQuestions
+
+	// Store final results in trace
+	agentTrace["final_intents"] = intents
+	agentTrace["final_entities"] = entities
+	agentTrace["final_confidence_scores"] = confidenceScores
 
 	// Write results to context
 	newContext.Reasoning.Intents = intents
 	newContext.Reasoning.Entities = entities
 	newContext.Reasoning.ConfidenceScores = confidenceScores
 	newContext.Reasoning.ClarificationQuestions = clarificationQuestions
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track agent execution in audit
 	duration := time.Since(startTime)
@@ -576,6 +629,13 @@ func (a *IntentDetectionAgent) shouldUseLLMFallback(confidenceScores map[string]
 // detectIntentsWithLLM uses LLM to detect intents with fallback chain.
 // Returns: intents, highest confidence score, number of LLM calls made, error
 func (a *IntentDetectionAgent) detectIntentsWithLLM(ctx context.Context, inputText string) ([]models.Intent, float64, int, error) {
+	response := ""
+	return a.detectIntentsWithLLMDetailed(ctx, inputText, &response)
+}
+
+// detectIntentsWithLLMDetailed uses LLM to detect intents and captures the response.
+// Returns: intents, highest confidence score, number of LLM calls made, error
+func (a *IntentDetectionAgent) detectIntentsWithLLMDetailed(ctx context.Context, inputText string, llmResponse *string) ([]models.Intent, float64, int, error) {
 	if a.llmOrchestrator == nil {
 		return nil, 0.0, 0, fmt.Errorf("LLM orchestrator not available")
 	}
@@ -584,15 +644,17 @@ func (a *IntentDetectionAgent) detectIntentsWithLLM(ctx context.Context, inputTe
 	prompt := a.buildIntentDetectionPrompt(inputText)
 
 	// Try deepseek-chat first (cheapest option)
-	intents, confidence, err := a.callLLMForIntent(ctx, prompt, models.TaskTypeIntentClassification)
+	intents, confidence, err := a.callLLMForIntentDetailed(ctx, prompt, models.TaskTypeIntentClassification, llmResponse)
 	llmCalls := 1
 
 	// If deepseek-chat confidence is still low, fallback to gpt-4o-mini
 	if err == nil && confidence < a.confidenceThreshold {
-		fallbackIntents, fallbackConfidence, fallbackErr := a.callLLMForIntent(ctx, prompt, models.TaskTypeIntentClassification)
+		fallbackResponse := ""
+		fallbackIntents, fallbackConfidence, fallbackErr := a.callLLMForIntentDetailed(ctx, prompt, models.TaskTypeIntentClassification, &fallbackResponse)
 		llmCalls++
 
 		if fallbackErr == nil && fallbackConfidence > confidence {
+			*llmResponse = fallbackResponse // Use fallback response
 			return fallbackIntents, fallbackConfidence, llmCalls, nil
 		}
 	}
@@ -624,6 +686,12 @@ Respond with JSON in this format:
 
 // callLLMForIntent calls the LLM orchestrator to detect intent.
 func (a *IntentDetectionAgent) callLLMForIntent(ctx context.Context, prompt string, taskType models.TaskType) ([]models.Intent, float64, error) {
+	response := ""
+	return a.callLLMForIntentDetailed(ctx, prompt, taskType, &response)
+}
+
+// callLLMForIntentDetailed calls the LLM orchestrator and captures the response.
+func (a *IntentDetectionAgent) callLLMForIntentDetailed(ctx context.Context, prompt string, taskType models.TaskType, llmResponse *string) ([]models.Intent, float64, error) {
 	// Create LLM request
 	req := &services.LLMRequest{
 		Prompt:      prompt,
@@ -641,27 +709,49 @@ func (a *IntentDetectionAgent) callLLMForIntent(ctx context.Context, prompt stri
 		return nil, 0.0, fmt.Errorf("failed to select model: %w", err)
 	}
 
-	// TODO: Actually call the LLM provider with the prompt
-	// For now, we'll simulate a response since we don't have the full LLM call implementation
-	// In production, this would call provider.StreamCompletion() and parse the JSON response
+	// Call LLM with the prompt
+	llmResp, err := a.llmOrchestrator.Call(ctx, req)
+	if err != nil {
+		return nil, 0.0, fmt.Errorf("LLM call failed: %w", err)
+	}
 
-	// Simulate LLM response parsing
-	// This is a placeholder - in production code, you would:
-	// 1. Call provider.StreamCompletion(ctx, prompt)
-	// 2. Parse the streaming response
-	// 3. Extract JSON and unmarshal to intent structure
+	_ = model    // Selected model logged in orchestrator
+	_ = provider // Selected provider logged in orchestrator
 
-	_ = model
-	_ = provider
+	// Store the full response
+	responseText := llmResp.Response
+	if llmResponse != nil {
+		*llmResponse = responseText
+	}
 
-	// For now, return a simulated high-confidence intent
-	// This allows the code to compile and demonstrates the fallback logic
+	// Parse JSON response
+	// Expected format: {"intent_type": "query_commits", "confidence": 0.95}
+	var result struct {
+		IntentType string  `json:"intent_type"`
+		Confidence float64 `json:"confidence"`
+	}
+	startIdx := strings.Index(responseText, "{")
+	endIdx := strings.LastIndex(responseText, "}")
+	if startIdx >= 0 && endIdx > startIdx {
+		jsonStr := responseText[startIdx : endIdx+1]
+		if err := json.Unmarshal([]byte(jsonStr), &result); err == nil {
+			// Successfully parsed JSON
+			return []models.Intent{
+				{
+					Type:       result.IntentType,
+					Confidence: result.Confidence,
+				},
+			}, result.Confidence, nil
+		}
+	}
+
+	// JSON parsing failed, return default with lower confidence
 	return []models.Intent{
 		{
-			Type:       "query_commits",
-			Confidence: 0.9,
+			Type:       "conversation",
+			Confidence: 0.6,
 		},
-	}, 0.9, nil
+	}, 0.6, nil
 }
 
 // generateClarificationQuestions creates clarification questions for ambiguous intents.

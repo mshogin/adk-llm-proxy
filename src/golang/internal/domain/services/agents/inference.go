@@ -88,36 +88,84 @@ func (a *InferenceAgent) Execute(ctx context.Context, agentContext *models.Agent
 	facts := newContext.Enrichment.Facts
 	knowledge := newContext.Enrichment.DerivedKnowledge
 
+	// Store detailed agent trace
+	agentTrace := map[string]interface{}{
+		"agent_id":          a.id,
+		"input_intents":     intents,
+		"input_hypotheses":  hypotheses,
+		"input_facts":       facts,
+		"input_knowledge":   knowledge,
+		"intents_count":     len(intents),
+		"hypotheses_count":  len(hypotheses),
+		"facts_count":       len(facts),
+		"knowledge_count":   len(knowledge),
+	}
+
 	// Generate inference chain
 	inferenceChain := a.buildInferenceChain(hypotheses, facts, knowledge)
+	agentTrace["inference_chain_steps"] = len(inferenceChain)
 
 	// Check if synthesis is complex
 	llmCalls := 0
 	var conclusions []models.Conclusion
 	var alternatives []models.Alternative
 
-	if a.shouldUseLLMSynthesis(intents, facts, knowledge, inferenceChain) {
+	shouldUseLLM := a.shouldUseLLMSynthesis(intents, facts, knowledge, inferenceChain)
+	agentTrace["llm_synthesis_triggered"] = shouldUseLLM
+
+	if shouldUseLLM {
 		// Complex synthesis: use LLM
+		agentTrace["synthesis_method"] = "llm"
 		llmConclusions, llmAlternatives, calls, err := a.synthesizeWithLLM(ctx, intents, hypotheses, facts, knowledge, inferenceChain)
+		llmCalls = calls
+		agentTrace["llm_calls_made"] = llmCalls
+
 		if err == nil {
 			conclusions = llmConclusions
 			alternatives = llmAlternatives
-			llmCalls = calls
+			agentTrace["llm_synthesis_success"] = true
 		} else {
 			// LLM failed, fallback to rule-based
+			agentTrace["llm_synthesis_success"] = false
+			agentTrace["llm_error"] = err.Error()
+			agentTrace["fallback_to_rules"] = true
 			conclusions = a.makeConclusions(intents, hypotheses, facts, knowledge, inferenceChain)
 			alternatives = a.generateAlternatives(conclusions, facts)
 		}
 	} else {
 		// Simple inference: use rule-based approach
+		agentTrace["synthesis_method"] = "rule_based"
 		conclusions = a.makeConclusions(intents, hypotheses, facts, knowledge, inferenceChain)
 		alternatives = a.generateAlternatives(conclusions, facts)
 	}
+
+	agentTrace["conclusions_count"] = len(conclusions)
+	agentTrace["alternatives_count"] = len(alternatives)
 
 	// Write results
 	newContext.Reasoning.Conclusions = conclusions
 	newContext.Reasoning.Alternatives = alternatives
 	newContext.Reasoning.InferenceChain = inferenceChain
+
+	// Store final output in trace
+	agentTrace["output_conclusions"] = conclusions
+	agentTrace["output_alternatives"] = alternatives
+	agentTrace["output_inference_chain"] = inferenceChain
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track execution
 	duration := time.Since(startTime)

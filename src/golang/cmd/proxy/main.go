@@ -94,7 +94,8 @@ func main() {
 		case "basic":
 			wf = workflows.NewBasicWorkflow()
 		case "advanced":
-			wf = workflows.NewAdvancedWorkflow(cfg.Advanced)
+			// Pass provider registry for intelligent reasoning
+			wf = workflows.NewAdvancedWorkflow(cfg.Advanced, providerRegistry)
 		default:
 			log.Printf("Warning: unknown workflow %s", wfName)
 			continue

@@ -307,6 +307,7 @@ func DefaultAgentPermissions() map[string][]string {
 		"intent_detection":    {"reasoning", "diagnostics", "audit"},
 		"reasoning_structure": {"reasoning", "diagnostics", "audit"},
 		"retrieval_planner":   {"retrieval", "diagnostics", "audit"},
+		"retrieval_executor":  {"retrieval", "diagnostics", "audit"},
 		"context_synthesizer": {"enrichment", "diagnostics", "audit"},
 		"inference":           {"reasoning", "enrichment", "llm", "diagnostics", "audit"},
 		"validation":          {"diagnostics", "audit"},

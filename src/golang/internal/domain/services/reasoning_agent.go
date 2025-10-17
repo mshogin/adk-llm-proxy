@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mshogin/agents/internal/domain/models"
 )
@@ -139,7 +140,7 @@ func (v *ContractValidator) ValidatePreconditions(ctx *models.AgentContext) Vali
 	}
 
 	if !result.Valid {
-		result.ValidationError = "Missing required preconditions"
+		result.ValidationError = fmt.Sprintf("Missing required preconditions: %v", result.MissingKeys)
 	}
 
 	return result
@@ -160,7 +161,7 @@ func (v *ContractValidator) ValidatePostconditions(ctx *models.AgentContext) Val
 	}
 
 	if !result.Valid {
-		result.ValidationError = "Agent failed to satisfy postconditions"
+		result.ValidationError = fmt.Sprintf("Agent failed to satisfy postconditions: missing keys %v", result.MissingKeys)
 	}
 
 	return result
@@ -182,19 +183,29 @@ func (v *ContractValidator) keyExists(ctx *models.AgentContext, key string) bool
 	case "reasoning.intents":
 		return len(ctx.Reasoning.Intents) > 0
 	case "reasoning.entities":
-		return len(ctx.Reasoning.Entities) > 0
+		return ctx.Reasoning.Entities != nil
+	case "reasoning.confidence_scores":
+		return len(ctx.Reasoning.ConfidenceScores) > 0
 	case "reasoning.hypotheses":
 		return len(ctx.Reasoning.Hypotheses) > 0
+	case "reasoning.dependency_map":
+		return ctx.Reasoning.DependencyMap != nil
 	case "reasoning.conclusions":
 		return len(ctx.Reasoning.Conclusions) > 0
+	case "reasoning.alternatives":
+		return ctx.Reasoning.Alternatives != nil
+	case "reasoning.inference_chain":
+		return len(ctx.Reasoning.InferenceChain) > 0
 	case "reasoning.summary":
 		return ctx.Reasoning.Summary != ""
+	case "reasoning.artifacts":
+		return len(ctx.Reasoning.Artifacts) > 0
 	case "enrichment.facts":
 		return len(ctx.Enrichment.Facts) > 0
 	case "enrichment.derived_knowledge":
 		return len(ctx.Enrichment.DerivedKnowledge) > 0
 	case "enrichment.relationships":
-		return len(ctx.Enrichment.Relationships) > 0
+		return ctx.Enrichment.Relationships != nil
 	case "retrieval.plans":
 		return len(ctx.Retrieval.Plans) > 0
 	case "retrieval.queries":
@@ -205,6 +216,12 @@ func (v *ContractValidator) keyExists(ctx *models.AgentContext, key string) bool
 		return ctx.LLM.Usage != nil && ctx.LLM.Usage.TotalTokens > 0
 	case "llm.decisions":
 		return len(ctx.LLM.Decisions) > 0
+	case "diagnostics.validation_reports":
+		return ctx.Diagnostics != nil && len(ctx.Diagnostics.ValidationReports) > 0
+	case "diagnostics.errors":
+		return ctx.Diagnostics != nil && ctx.Diagnostics.Errors != nil
+	case "diagnostics.warnings":
+		return ctx.Diagnostics != nil && ctx.Diagnostics.Warnings != nil
 	default:
 		// Unknown key - assume it doesn't exist
 		return false

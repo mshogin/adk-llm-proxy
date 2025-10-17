@@ -89,22 +89,58 @@ func (a *ReasoningStructureAgent) Execute(ctx context.Context, agentContext *mod
 	intents := newContext.Reasoning.Intents
 	entities := newContext.Reasoning.Entities
 
+	// Store detailed agent trace
+	agentTrace := map[string]interface{}{
+		"agent_id": a.id,
+		"input_intents": intents,
+		"input_entities": entities,
+		"input_count": len(intents),
+	}
+
 	// Generate hypotheses from intents
 	hypotheses := a.generateHypotheses(intents, entities)
+	agentTrace["generated_hypotheses"] = hypotheses
+	agentTrace["hypotheses_count"] = len(hypotheses)
 
 	// Build dependency graph
 	dependencyGraph := a.buildDependencyGraph(hypotheses)
+	agentTrace["dependency_graph_nodes"] = len(dependencyGraph.Nodes)
+	agentTrace["dependency_graph_edges"] = len(dependencyGraph.Edges)
 
 	// Detect cycles
-	if cycles := a.detectCycles(dependencyGraph); len(cycles) > 0 {
+	cycles := a.detectCycles(dependencyGraph)
+	agentTrace["cycles_detected"] = len(cycles)
+	if len(cycles) > 0 {
 		// Log warning but don't fail - cycles will be broken by removing lowest confidence links
 		a.recordWarning(newContext, fmt.Sprintf("Detected cycles in dependency graph: %v", cycles))
 		dependencyGraph = a.breakCycles(dependencyGraph, hypotheses, cycles)
+		agentTrace["cycles_broken"] = true
+	} else {
+		agentTrace["cycles_broken"] = false
 	}
 
 	// Write results to context
 	newContext.Reasoning.Hypotheses = hypotheses
 	newContext.Reasoning.DependencyMap = dependencyGraph
+
+	// Store final output in trace
+	agentTrace["output_hypotheses"] = hypotheses
+	agentTrace["output_dependency_map"] = dependencyGraph
+
+	// Store agent trace in LLM cache
+	if newContext.LLM == nil {
+		newContext.LLM = &models.LLMContext{
+			Cache: make(map[string]interface{}),
+		}
+	}
+	if newContext.LLM.Cache == nil {
+		newContext.LLM.Cache = make(map[string]interface{})
+	}
+	if traces, ok := newContext.LLM.Cache["agent_traces"].([]interface{}); ok {
+		newContext.LLM.Cache["agent_traces"] = append(traces, agentTrace)
+	} else {
+		newContext.LLM.Cache["agent_traces"] = []interface{}{agentTrace}
+	}
 
 	// Track agent execution in audit
 	duration := time.Since(startTime)

@@ -140,15 +140,59 @@ ctx.Retrieval.Plans = []models.RetrievalPlan{
 
 ---
 
-### 4. Context Synthesizer Agent
+### 4. Retrieval Executor Agent
+
+**Agent ID**: `retrieval_executor`
+
+**Purpose**: Execute retrieval queries against data sources and collect artifacts
+
+**Preconditions**:
+- `retrieval.plans` - Retrieval plans from planner
+- `retrieval.queries` - Generated queries to execute
+
+**Postconditions**:
+- `retrieval.artifacts` - Retrieved data from external sources
+
+**Input Requirements**:
+- Data source clients configured (GitLab, YouTrack, etc.)
+
+**Example Contract**:
+```go
+func (a *RetrievalExecutorAgent) Preconditions() []string {
+    return []string{"retrieval.plans", "retrieval.queries"}
+}
+
+func (a *RetrievalExecutorAgent) Postconditions() []string {
+    return []string{"retrieval.artifacts"}
+}
+```
+
+**Guaranteed Output**:
+```go
+ctx.Retrieval.Artifacts = []models.Artifact{
+    {
+        ID: "artifact-1",
+        Type: "commit",
+        Source: "gitlab",
+        Content: map[string]interface{}{
+            "id": "abc123",
+            "message": "feat: add feature",
+            "author": "john.doe@example.com",
+        },
+    },
+}
+```
+
+---
+
+### 5. Context Synthesizer Agent
 
 **Agent ID**: `context_synthesizer`
 
 **Purpose**: Normalize and merge facts from multiple sources
 
 **Preconditions**:
-- `retrieval.plans` - Retrieval plans
-- `retrieval.queries` - Queries to execute
+- `retrieval.artifacts` - Retrieved data from various sources
 
 **Postconditions**:
 - `enrichment.facts` - Collected and normalized facts
@@ -179,7 +223,7 @@ ctx.Enrichment.Facts = []models.Fact{
 
 ---
 
-### 5. Inference Agent
+### 6. Inference Agent
 
 **Agent ID**: `inference`
 
@@ -218,7 +262,7 @@ ctx.Reasoning.Conclusions = []models.Conclusion{
 
 ---
 
-### 6. Validation Agent
+### 7. Validation Agent
 
 **Agent ID**: `validation`
 
@@ -256,7 +300,7 @@ ctx.Diagnostics.ValidationReports = []models.ValidationReport{
 
 ---
 
-### 7. Summarization Agent
+### 8. Summarization Agent
 
 **Agent ID**: `summarization`
 
