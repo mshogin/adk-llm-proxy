@@ -1223,10 +1223,10 @@ func GetSampleIntents_QueryIssues() []models.Intent {
 
 **Goal**: Create helper utilities for integration testing
 
-- [ ] Create `TestServer` utility in `tests/golang/integration/single_agent/test_server.go`
-- [ ] Create `MockContextBuilder` in `tests/golang/integration/single_agent/mock_context_builder.go`
-- [ ] Create `ResponseValidator` in `tests/golang/integration/single_agent/response_validator.go`
-- [ ] Create common helpers in `tests/golang/integration/single_agent/helpers.go`
+- [x] Create `TestServer` utility in `tests/golang/integration/single_agent/test_server.go`
+- [x] Create `MockContextBuilder` in `tests/golang/integration/single_agent/mock_context_builder.go`
+- [x] Create `ResponseValidator` in `tests/golang/integration/single_agent/response_validator.go`
+- [x] Create common helpers in `tests/golang/integration/single_agent/helpers.go`
 - [ ] Add documentation in `docs/reasoning_system/single_agent_testing_guide.md`
 
 **Implementation notes:**
